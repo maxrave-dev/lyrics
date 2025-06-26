@@ -58,4 +58,14 @@ class AppwriteConfig {
     fun lyricsCollectionId(): String {
         return lyricsCollectionId
     }
+
+    @Bean
+    fun translatedLyricsCollectionId(): String {
+        return translatedLyricsCollectionId
+    }
+
+    @Bean
+    fun notFoundLyricsCollectionId(): String {
+        return notFoundLyricsCollectionId
+    }
 } 

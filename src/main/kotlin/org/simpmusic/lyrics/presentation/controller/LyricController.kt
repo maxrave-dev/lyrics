@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import org.simpmusic.lyrics.application.dto.LyricDTO
+import org.simpmusic.lyrics.application.dto.TranslatedLyricDTO
+import org.simpmusic.lyrics.application.dto.NotFoundLyricDTO
 import org.simpmusic.lyrics.application.service.LyricService
 import org.simpmusic.lyrics.domain.model.Resource
 import org.slf4j.LoggerFactory
@@ -106,6 +108,105 @@ class LyricController(
                 is Resource.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.data)
                 is Resource.Error -> {
                     logger.error("Failed to create lyric: ${result.message}", result.exception)
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                }
+                is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
+            }
+        }
+    }
+    
+    // ========== TranslatedLyrics API Endpoints ==========
+    
+    @GetMapping("/translated/{videoId}")
+    suspend fun getTranslatedLyricsByVideoId(@PathVariable videoId: String): ResponseEntity<List<TranslatedLyricDTO>> {
+        return withContext(ioDispatcher) {
+            logger.debug("Getting translated lyrics for videoId: $videoId")
+            val result = lyricService.getTranslatedLyricsByVideoId(videoId).last()
+            when (result) {
+                is Resource.Success -> {
+                    logger.debug("Found ${result.data.size} translated lyrics for videoId: $videoId")
+                    ResponseEntity.ok(result.data)
+                }
+                is Resource.Error -> {
+                    logger.error("Failed to get translated lyrics by videoId: ${result.message}", result.exception)
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                }
+                is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
+            }
+        }
+    }
+    
+    @GetMapping("/translated/{videoId}/{language}")
+    suspend fun getTranslatedLyricByVideoIdAndLanguage(
+        @PathVariable videoId: String,
+        @PathVariable language: String
+    ): ResponseEntity<TranslatedLyricDTO> {
+        return withContext(ioDispatcher) {
+            logger.debug("Getting translated lyrics for videoId: $videoId, language: $language")
+            val result = lyricService.getTranslatedLyricByVideoIdAndLanguage(videoId, language).last()
+            when (result) {
+                is Resource.Success -> {
+                    result.data?.let {
+                        logger.debug("Found translated lyrics for videoId: $videoId, language: $language")
+                        ResponseEntity.ok(it)
+                    } ?: ResponseEntity.notFound().build()
+                }
+                is Resource.Error -> {
+                    logger.error("Failed to get translated lyrics: ${result.message}", result.exception)
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                }
+                is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
+            }
+        }
+    }
+    
+    @GetMapping("/translated/language/{language}")
+    suspend fun getTranslatedLyricsByLanguage(@PathVariable language: String): ResponseEntity<List<TranslatedLyricDTO>> {
+        return withContext(ioDispatcher) {
+            logger.debug("Getting translated lyrics for language: $language")
+            val result = lyricService.getTranslatedLyricsByLanguage(language).last()
+            when (result) {
+                is Resource.Success -> {
+                    logger.debug("Found ${result.data.size} translated lyrics for language: $language")
+                    ResponseEntity.ok(result.data)
+                }
+                is Resource.Error -> {
+                    logger.error("Failed to get translated lyrics by language: ${result.message}", result.exception)
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                }
+                is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
+            }
+        }
+    }
+    
+    @GetMapping("/translated")
+    suspend fun getAllTranslatedLyrics(): ResponseEntity<List<TranslatedLyricDTO>> {
+        return withContext(ioDispatcher) {
+            logger.debug("Getting all translated lyrics")
+            val result = lyricService.getAllTranslatedLyrics().last()
+            when (result) {
+                is Resource.Success -> {
+                    logger.debug("Found ${result.data.size} translated lyrics")
+                    ResponseEntity.ok(result.data)
+                }
+                is Resource.Error -> {
+                    logger.error("Failed to get all translated lyrics: ${result.message}", result.exception)
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                }
+                is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
+            }
+        }
+    }
+    
+    @PostMapping("/translated")
+    suspend fun createTranslatedLyric(@RequestBody translatedLyricDTO: TranslatedLyricDTO): ResponseEntity<TranslatedLyricDTO> {
+        return withContext(ioDispatcher) {
+            logger.debug("Creating translated lyric")
+            val result = lyricService.saveTranslatedLyric(translatedLyricDTO).last()
+            when (result) {
+                is Resource.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.data)
+                is Resource.Error -> {
+                    logger.error("Failed to create translated lyric: ${result.message}", result.exception)
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
                 }
                 is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()

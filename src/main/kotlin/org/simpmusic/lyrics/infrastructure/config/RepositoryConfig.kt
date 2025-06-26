@@ -2,7 +2,11 @@ package org.simpmusic.lyrics.infrastructure.config
 
 import io.appwrite.services.Databases
 import org.simpmusic.lyrics.domain.repository.LyricRepository
+import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
+import org.simpmusic.lyrics.domain.repository.NotFoundLyricRepository
 import org.simpmusic.lyrics.infrastructure.persistence.AppwriteLyricRepository
+import org.simpmusic.lyrics.infrastructure.persistence.AppwriteTranslatedLyricRepository
+import org.simpmusic.lyrics.infrastructure.persistence.AppwriteNotFoundLyricRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
@@ -21,5 +25,25 @@ class RepositoryConfig {
         lyricsCollectionId: String
     ): LyricRepository {
         return AppwriteLyricRepository(databases, databaseId, lyricsCollectionId)
+    }
+
+    @Bean
+    @Primary
+    fun translatedLyricRepository(
+        databases: Databases,
+        databaseId: String,
+        translatedLyricsCollectionId: String
+    ): TranslatedLyricRepository {
+        return AppwriteTranslatedLyricRepository(databases, databaseId, translatedLyricsCollectionId)
+    }
+
+    @Bean
+    @Primary
+    fun notFoundLyricRepository(
+        databases: Databases,
+        databaseId: String,
+        notFoundLyricsCollectionId: String
+    ): NotFoundLyricRepository {
+        return AppwriteNotFoundLyricRepository(databases, databaseId, notFoundLyricsCollectionId)
     }
 } 

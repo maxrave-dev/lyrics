@@ -23,7 +23,10 @@ import kotlin.reflect.full.memberProperties
 class AppwriteDataSource(
     private val databases: Databases,
     @Qualifier("databaseId") private val databaseId: String,
-    @Qualifier("lyricsCollectionId") private val lyricsCollectionId: String
+    @Qualifier("lyricsCollectionId") private val lyricsCollectionId: String,
+    @Qualifier("translatedLyricsCollectionId") private val translatedLyricsCollectionId: String,
+    @Qualifier("notFoundLyricsCollectionId") private val notFoundLyricsCollectionId: String,
+    private val appwriteCollectionInitializer: AppwriteCollectionInitializer
 ) {
     private val logger = LoggerFactory.getLogger(AppwriteDataSource::class.java)
     
@@ -96,7 +99,79 @@ class AppwriteDataSource(
                 }
             }
             
-            logger.info("Database and collection setup completed successfully")
+            // Check and create translated_lyrics collection
+            logger.info("Step 4: Checking if translated_lyrics collection exists: $translatedLyricsCollectionId")
+            try {
+                databases.getCollection(databaseId, translatedLyricsCollectionId)
+                logger.info("Collection $translatedLyricsCollectionId already exists")
+            } catch (e: AppwriteException) {
+                if (e.code == 404) {
+                    logger.info("Collection $translatedLyricsCollectionId doesn't exist, creating...")
+                    databases.createCollection(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        name = "TranslatedLyrics"
+                    )
+                    logger.info("Successfully created collection $translatedLyricsCollectionId")
+                    
+                    // Create attributes for translated_lyrics collection
+                    appwriteCollectionInitializer.createTranslatedLyricsCollectionAttributes().collect { result ->
+                        when (result) {
+                            is Resource.Success -> {
+                                logger.info("Successfully created all translated_lyrics attributes")
+                            }
+                            is Resource.Error -> {
+                                logger.error("Failed to create translated_lyrics attributes: ${result.message}")
+                                throw Exception(result.message, result.exception)
+                            }
+                            is Resource.Loading -> {
+                                logger.debug("Creating translated_lyrics attributes in progress...")
+                            }
+                        }
+                    }
+                } else {
+                    logger.error("Error checking translated_lyrics collection: ${e.message}")
+                    throw e
+                }
+            }
+            
+            // Check and create notfound_lyrics collection
+            logger.info("Step 5: Checking if notfound_lyrics collection exists: $notFoundLyricsCollectionId")
+            try {
+                databases.getCollection(databaseId, notFoundLyricsCollectionId)
+                logger.info("Collection $notFoundLyricsCollectionId already exists")
+            } catch (e: AppwriteException) {
+                if (e.code == 404) {
+                    logger.info("Collection $notFoundLyricsCollectionId doesn't exist, creating...")
+                    databases.createCollection(
+                        databaseId = databaseId,
+                        collectionId = notFoundLyricsCollectionId,
+                        name = "NotFoundLyrics"
+                    )
+                    logger.info("Successfully created collection $notFoundLyricsCollectionId")
+                    
+                    // Create attributes for notfound_lyrics collection
+                    appwriteCollectionInitializer.createNotFoundLyricsCollectionAttributes().collect { result ->
+                        when (result) {
+                            is Resource.Success -> {
+                                logger.info("Successfully created all notfound_lyrics attributes")
+                            }
+                            is Resource.Error -> {
+                                logger.error("Failed to create notfound_lyrics attributes: ${result.message}")
+                                throw Exception(result.message, result.exception)
+                            }
+                            is Resource.Loading -> {
+                                logger.debug("Creating notfound_lyrics attributes in progress...")
+                            }
+                        }
+                    }
+                } else {
+                    logger.error("Error checking notfound_lyrics collection: ${e.message}")
+                    throw e
+                }
+            }
+            
+            logger.info("Database and all collections setup completed successfully")
             "Appwrite initialized successfully"
             
         }.fold(
