@@ -74,6 +74,12 @@ class LyricService(
             .catchToResourceError()
     }
     
+    fun getLyricsByVideoId(videoId: String): Flow<Resource<List<LyricDTO>>> {
+        return lyricRepository.findByVideoId(videoId)
+            .mapSuccess { lyrics -> lyrics.map { it.toDTO() } }
+            .catchToResourceError()
+    }
+    
     fun getAllLyrics(): Flow<Resource<List<LyricDTO>>> {
         return lyricRepository.findAll()
             .mapSuccess { lyrics -> lyrics.map { it.toDTO() } }
@@ -88,6 +94,12 @@ class LyricService(
     
     fun getLyricsByArtist(artist: String): Flow<Resource<List<LyricDTO>>> {
         return lyricRepository.findByArtist(artist)
+            .mapSuccess { lyrics -> lyrics.map { it.toDTO() } }
+            .catchToResourceError()
+    }
+    
+    fun searchLyrics(keywords: String): Flow<Resource<List<LyricDTO>>> {
+        return lyricRepository.search(keywords)
             .mapSuccess { lyrics -> lyrics.map { it.toDTO() } }
             .catchToResourceError()
     }
@@ -107,7 +119,7 @@ class LyricService(
     @OptIn(ExperimentalUuidApi::class)
     private fun Lyric.toDTO(): LyricDTO {
         return LyricDTO(
-            id = id,
+            id = id.toString(),
             videoId = videoId,
             songTitle = songTitle,
             artistName = artistName,
@@ -125,7 +137,7 @@ class LyricService(
     @OptIn(ExperimentalUuidApi::class)
     private fun LyricDTO.toEntity(): Lyric {
         return Lyric(
-            id = id,
+            id = Uuid.parse(id),
             videoId = videoId,
             songTitle = songTitle,
             artistName = artistName,

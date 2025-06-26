@@ -29,6 +29,11 @@ class InMemoryLyricRepository : LyricRepository {
         emit(Resource.Success(lyrics[id]))
     }.flowOn(Dispatchers.IO)
 
+    override fun findByVideoId(videoId: String): Flow<Resource<List<Lyric>>> = flow {
+        emit(Resource.Loading)
+        emit(Resource.Success(lyrics.values.filter { it.videoId == videoId }))
+    }.flowOn(Dispatchers.IO)
+
     override fun findAll(): Flow<Resource<List<Lyric>>> = flow {
         emit(Resource.Loading)
         emit(Resource.Success(lyrics.values.toList()))
@@ -42,6 +47,18 @@ class InMemoryLyricRepository : LyricRepository {
     override fun findByArtist(artist: String): Flow<Resource<List<Lyric>>> = flow {
         emit(Resource.Loading)
         emit(Resource.Success(lyrics.values.filter { it.artistName.contains(artist, ignoreCase = true) }))
+    }.flowOn(Dispatchers.IO)
+
+    override fun search(keywords: String): Flow<Resource<List<Lyric>>> = flow {
+        emit(Resource.Loading)
+        val results = lyrics.values.filter { lyric ->
+            lyric.songTitle.contains(keywords, ignoreCase = true) ||
+            lyric.artistName.contains(keywords, ignoreCase = true) ||
+            lyric.albumName.contains(keywords, ignoreCase = true) ||
+            lyric.plainLyric.contains(keywords, ignoreCase = true) ||
+            lyric.contributor.contains(keywords, ignoreCase = true)
+        }
+        emit(Resource.Success(results))
     }.flowOn(Dispatchers.IO)
 
     override fun save(lyric: Lyric): Flow<Resource<Lyric>> = flow {

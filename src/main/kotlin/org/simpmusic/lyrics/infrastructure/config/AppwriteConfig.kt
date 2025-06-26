@@ -1,6 +1,7 @@
 package org.simpmusic.lyrics.infrastructure.config
 
 import io.appwrite.Client
+import io.appwrite.services.Account
 import io.appwrite.services.Databases
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -41,6 +42,11 @@ class AppwriteConfig {
     @Bean
     fun appwriteDatabases(client: Client): Databases {
         return Databases(client)
+    }
+    
+    @Bean
+    fun appwriteAccount(client: Client): Account {
+        return Account(client)
     }
     
     @Bean

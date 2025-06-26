@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+[LyricController.kt](mdc:src/main/kotlin/org/simpmusic/lyrics/presentation/controller/LyricController.kt) In controller, please use Flow.last() or lastOrNull(), because the controller need a return value, if you use last(), the return value will be exactly. Use .onEach {}, then log if the function is in Loading state.

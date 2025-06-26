@@ -14,8 +14,8 @@ data class Lyric @OptIn(ExperimentalUuidApi::class) constructor(
     val albumName: String,
     val durationSeconds: Int,
     val plainLyric: String,
-    val syncedLyrics: String, // LRC format
-    val richSyncLyrics: String, // LRC format like Karaoke
+    val syncedLyrics: String?, // LRC format
+    val richSyncLyrics: String?, // LRC format like Karaoke
     val vote: Int,
     val contributor: String,
     val contributorEmail: String,
