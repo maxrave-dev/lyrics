@@ -39,7 +39,11 @@ class LyricController(
             when (result) {
                 is Resource.Success -> {
                     logger.debug("Found ${result.data.size} lyrics for videoId: $videoId")
-                    ResponseEntity.ok(result.data)
+                    if (result.data.isNotEmpty()) {
+                        ResponseEntity.ok(result.data)
+                    } else {
+                        ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+                    }
                 }
                 is Resource.Error -> {
                     logger.error("Failed to get lyrics by videoId: ${result.message}", result.exception)

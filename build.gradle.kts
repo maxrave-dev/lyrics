@@ -39,7 +39,7 @@ dependencies {
     // AppWrite
     implementation(libs.appwrite.sdk)
 
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+    implementation(libs.spring.swagger)
 }
 
 kotlin {

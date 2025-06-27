@@ -7,6 +7,7 @@ springDependencyManagement = "1.1.7"
 coroutines = "1.10.2"
 appwrite = "9.0.0"
 kotlinxSerializationJson = "1.8.1"
+swagger = "2.8.9"
 
 [libraries]
 # Spring Boot
@@ -36,6 +37,9 @@ junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform
 
 # AppWrite
 appwrite-sdk = { group = "io.appwrite", name = "sdk-for-kotlin", version.ref = "appwrite" }
+
+# Swagger
+spring-swagger = { group = "org.springdoc", name = "springdoc-openapi-starter-webmvc-ui", version.ref = "swagger" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

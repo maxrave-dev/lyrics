@@ -1,16 +1,13 @@
 package org.simpmusic.lyrics.infrastructure.persistence
 
-import io.appwrite.ID
 import io.appwrite.Query
 import io.appwrite.exceptions.AppwriteException
 import io.appwrite.models.Document
 import io.appwrite.services.Databases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.onStart
 import org.simpmusic.lyrics.domain.model.Lyric
 import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.domain.repository.LyricRepository

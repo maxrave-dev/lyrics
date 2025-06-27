@@ -16,9 +16,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+
 
 /**
  * Appwrite implementation of the NotFoundLyricRepository
@@ -244,7 +246,7 @@ class AppwriteNotFoundLyricRepository(
         return NotFoundLyric(
             id = Uuid.parse(document.data["id"] as String),
             videoId = document.data["videoId"] as String,
-            addedDate = LocalDateTime.parse(document.data["addedDate"] as String, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            addedDate = LocalDateTime.parse(document.data["addedDate"] as String, DateTimeFormatter.ISO_ZONED_DATE_TIME)
         )
     }
 } 
