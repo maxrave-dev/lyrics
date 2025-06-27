@@ -39,5 +39,7 @@ out/
 ### Kotlin ###
 .kotlin
 
-src/main/resources/application.properties
+### Can access to .properties files in src/main/resources ###
+#src/main/resources/application.properties
+### But not .env files ###
 .env
