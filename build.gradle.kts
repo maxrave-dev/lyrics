@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "org.simpmusic"
-version = "0.0.1-SNAPSHOT"
+version = libs.versions.appversion.get()
 
 java {
     toolchain {
