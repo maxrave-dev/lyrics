@@ -38,7 +38,7 @@ class AppwriteCollectionInitializer(
                 databaseId = databaseId,
                 collectionId = translatedLyricsCollectionId,
                 key = "id",
-                size = 36,
+                size = 64,
                 required = true
             )
             logger.info("Created id attribute: ${idAttribute.key}")
@@ -65,7 +65,7 @@ class AppwriteCollectionInitializer(
             )
             logger.info("Created translatedLyric attribute: ${translatedLyricAttribute.key}")
             
-            // language attribute (2 letter code)
+            // language attribute (2-letter code)
             logger.info("Creating language attribute for translated_lyrics...")
             val languageAttribute = databases.createStringAttribute(
                 databaseId = databaseId,
@@ -108,6 +108,17 @@ class AppwriteCollectionInitializer(
                 required = true
             )
             logger.info("Created contributorEmail attribute: ${contributorEmailAttribute.key}")
+
+            // sha256hash attribute
+            logger.info("Creating sha256hash attribute for translated_lyrics...")
+            val sha256hashAttribute = databases.createStringAttribute(
+                databaseId = databaseId,
+                collectionId = translatedLyricsCollectionId,
+                key = "sha256hash",
+                size = 64,
+                required = true
+            )
+            logger.info("Created sha256hash attribute: ${sha256hashAttribute.key}")
             
             // Create indexes
             logger.info("Creating indexes for translated_lyrics...")
@@ -157,7 +168,7 @@ class AppwriteCollectionInitializer(
                 databaseId = databaseId,
                 collectionId = notFoundLyricsCollectionId,
                 key = "id",
-                size = 36,
+                size = 64,
                 required = true
             )
             logger.info("Created id attribute: ${idAttribute.key}")

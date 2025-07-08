@@ -12,17 +12,15 @@ import kotlinx.coroutines.flow.flowOn
 import org.simpmusic.lyrics.domain.model.TranslatedLyric
 import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
+import org.simpmusic.lyrics.extensions.sha256
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Repository
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Appwrite implementation of the TranslatedLyricRepository
  */
 @Repository("appwriteTranslatedLyricRepositoryImpl")
-@OptIn(ExperimentalUuidApi::class)
 class AppwriteTranslatedLyricRepository(
     private val databases: Databases,
     @Qualifier("databaseId") private val databaseId: String,
@@ -160,6 +158,31 @@ class AppwriteTranslatedLyricRepository(
         logger.debug("findAll completed for translated lyrics")
     }.flowOn(Dispatchers.IO)
 
+    override fun findBySha256Hash(sha256hash: String): Flow<Resource<TranslatedLyric?>> = flow {
+        logger.debug("findBySha256Hash --> Started for hash: $sha256hash")
+        emit(Resource.Loading)
+        
+        runCatching {
+            logger.debug("findBySha256Hash --> Calling databases.listDocuments with sha256hash query: $sha256hash")
+            databases.listDocuments(
+                databaseId = databaseId,
+                collectionId = collectionId,
+                queries = listOf(Query.equal("sha256hash", sha256hash))
+            )
+        }.fold(
+            onSuccess = { documents ->
+                val translatedLyric = documents.documents.firstOrNull()?.let { documentToTranslatedLyric(it) }
+                logger.debug("findBySha256Hash --> Found translated lyric with sha256hash: $sha256hash: ${translatedLyric != null}")
+                emit(Resource.Success(translatedLyric))
+            },
+            onFailure = { e ->
+                logger.error("findBySha256Hash --> Error finding translated lyric by sha256hash: $sha256hash", e)
+                emit(Resource.Error("Failed to find translated lyric by sha256hash: ${e.message}", e as? Exception))
+            }
+        )
+        logger.debug("findBySha256Hash --> Completed for hash: $sha256hash")
+    }.flowOn(Dispatchers.IO)
+
     override fun save(translatedLyric: TranslatedLyric): Flow<Resource<TranslatedLyric>> = flow {
         logger.debug("save started for translated lyric id: ${translatedLyric.id}")
         emit(Resource.Loading)
@@ -171,7 +194,8 @@ class AppwriteTranslatedLyricRepository(
             "language" to translatedLyric.language,
             "vote" to translatedLyric.vote,
             "contributor" to translatedLyric.contributor,
-            "contributorEmail" to translatedLyric.contributorEmail
+            "contributorEmail" to translatedLyric.contributorEmail,
+            "sha256hash" to translatedLyric.sha256hash
         )
         
         runCatching {
@@ -224,14 +248,20 @@ class AppwriteTranslatedLyricRepository(
     }.flowOn(Dispatchers.IO)
 
     private fun documentToTranslatedLyric(document: Document<Map<String, Any>>): TranslatedLyric {
+        val videoId = document.data["videoId"] as String
+        val translatedLyric = document.data["translatedLyric"] as String
+        val language = document.data["language"] as String
+        
         return TranslatedLyric(
-            id = Uuid.parse(document.data["id"] as String),
-            videoId = document.data["videoId"] as String,
-            translatedLyric = document.data["translatedLyric"] as String,
-            language = document.data["language"] as String,
+            id = document.data["id"] as String,
+            videoId = videoId,
+            translatedLyric = translatedLyric,
+            language = language,
             vote = (document.data["vote"] as Number).toInt(),
             contributor = document.data["contributor"] as String,
-            contributorEmail = document.data["contributorEmail"] as String
+            contributorEmail = document.data["contributorEmail"] as String,
+            sha256hash = document.data["sha256hash"]?.toString()
+                ?: "$videoId-$language-$translatedLyric".sha256()
         )
     }
 } 

@@ -10,9 +10,6 @@ import org.simpmusic.lyrics.domain.repository.LyricRepository
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Repository
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * In-memory implementation of the LyricRepository
@@ -20,7 +17,6 @@ import kotlin.uuid.Uuid
  */
 @Repository
 @Profile("local", "test")
-@OptIn(ExperimentalUuidApi::class)
 class InMemoryLyricRepository : LyricRepository {
     private val lyrics = ConcurrentHashMap<String, Lyric>()
 
@@ -59,6 +55,12 @@ class InMemoryLyricRepository : LyricRepository {
             lyric.contributor.contains(keywords, ignoreCase = true)
         }
         emit(Resource.Success(results))
+    }.flowOn(Dispatchers.IO)
+
+    override fun findBySha256Hash(sha256hash: String): Flow<Resource<Lyric?>> = flow {
+        emit(Resource.Loading)
+        val lyric = lyrics.values.firstOrNull { it.sha256hash == sha256hash }
+        emit(Resource.Success(lyric))
     }.flowOn(Dispatchers.IO)
 
     override fun save(lyric: Lyric): Flow<Resource<Lyric>> = flow {

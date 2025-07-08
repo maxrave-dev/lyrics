@@ -15,6 +15,7 @@ interface TranslatedLyricRepository {
     fun findByVideoIdAndLanguage(videoId: String, language: String): Flow<Resource<TranslatedLyric?>>
     fun findByLanguage(language: String): Flow<Resource<List<TranslatedLyric>>>
     fun findAll(): Flow<Resource<List<TranslatedLyric>>>
+    fun findBySha256Hash(sha256hash: String): Flow<Resource<TranslatedLyric?>>
     fun save(translatedLyric: TranslatedLyric): Flow<Resource<TranslatedLyric>>
     fun delete(id: String): Flow<Resource<Boolean>>
 } 

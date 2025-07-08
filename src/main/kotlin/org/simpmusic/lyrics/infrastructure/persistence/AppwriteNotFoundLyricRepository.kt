@@ -18,15 +18,12 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 
 /**
  * Appwrite implementation of the NotFoundLyricRepository
  */
 @Repository("appwriteNotFoundLyricRepositoryImpl")
-@OptIn(ExperimentalUuidApi::class)
 class AppwriteNotFoundLyricRepository(
     private val databases: Databases,
     @Qualifier("databaseId") private val databaseId: String,
@@ -138,11 +135,10 @@ class AppwriteNotFoundLyricRepository(
     }.flowOn(Dispatchers.IO)
 
     override fun save(notFoundLyric: NotFoundLyric): Flow<Resource<NotFoundLyric>> = flow {
-        logger.debug("save started for notfound lyric id: ${notFoundLyric.id}")
+        logger.debug("save started for notfound lyric id: ${notFoundLyric.videoId}")
         emit(Resource.Loading)
         
         val data = mapOf(
-            "id" to notFoundLyric.id.toString(),
             "videoId" to notFoundLyric.videoId,
             "addedDate" to notFoundLyric.addedDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         )
@@ -157,15 +153,15 @@ class AppwriteNotFoundLyricRepository(
             )
         }.fold(
             onSuccess = { document ->
-                logger.debug("Successfully saved notfound lyric with id: ${notFoundLyric.id}")
+                logger.debug("Successfully saved notfound lyric with id: ${notFoundLyric.videoId}")
                 emit(Resource.Success(documentToNotFoundLyric(document)))
             },
             onFailure = { e ->
-                logger.error("Error saving notfound lyric with id: ${notFoundLyric.id}", e)
+                logger.error("Error saving notfound lyric with id: ${notFoundLyric.videoId}", e)
                 emit(Resource.Error("Failed to save notfound lyric: ${e.message}", e as? Exception))
             }
         )
-        logger.debug("save completed for notfound lyric id: ${notFoundLyric.id}")
+        logger.debug("save completed for notfound lyric id: ${notFoundLyric.videoId}")
     }.flowOn(Dispatchers.IO)
 
     override fun delete(id: String): Flow<Resource<Boolean>> = flow {
@@ -244,7 +240,6 @@ class AppwriteNotFoundLyricRepository(
 
     private fun documentToNotFoundLyric(document: Document<Map<String, Any>>): NotFoundLyric {
         return NotFoundLyric(
-            id = Uuid.parse(document.data["id"] as String),
             videoId = document.data["videoId"] as String,
             addedDate = LocalDateTime.parse(document.data["addedDate"] as String, DateTimeFormatter.ISO_ZONED_DATE_TIME)
         )

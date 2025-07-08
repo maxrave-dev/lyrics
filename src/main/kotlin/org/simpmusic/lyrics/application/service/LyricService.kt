@@ -1,36 +1,26 @@
 package org.simpmusic.lyrics.application.service
 
+import io.appwrite.ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
 import org.simpmusic.lyrics.application.dto.LyricDTO
-import org.simpmusic.lyrics.application.dto.TranslatedLyricDTO
 import org.simpmusic.lyrics.application.dto.NotFoundLyricDTO
+import org.simpmusic.lyrics.application.dto.TranslatedLyricDTO
 import org.simpmusic.lyrics.domain.model.Lyric
-import org.simpmusic.lyrics.domain.model.TranslatedLyric
 import org.simpmusic.lyrics.domain.model.NotFoundLyric
 import org.simpmusic.lyrics.domain.model.Resource
+import org.simpmusic.lyrics.domain.model.TranslatedLyric
 import org.simpmusic.lyrics.domain.repository.LyricRepository
-import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
 import org.simpmusic.lyrics.domain.repository.NotFoundLyricRepository
+import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
 import org.simpmusic.lyrics.infrastructure.datasource.AppwriteDataSource
-import org.simpmusic.lyrics.infrastructure.util.catchToResourceError
-import org.simpmusic.lyrics.infrastructure.util.logCompletion
-import org.simpmusic.lyrics.infrastructure.util.logEach
-import org.simpmusic.lyrics.infrastructure.util.mapSuccess
-import org.simpmusic.lyrics.infrastructure.util.mapSuccessNotNull
-import org.simpmusic.lyrics.infrastructure.util.shareHot
+import org.simpmusic.lyrics.infrastructure.util.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Application service implementing lyrics use cases
@@ -87,7 +77,6 @@ class LyricService(
             .catchToResourceError()
     }
     
-    @OptIn(ExperimentalUuidApi::class)
     fun getLyricsByVideoId(videoId: String): Flow<Resource<List<LyricDTO>>> = flow {
         emit(Resource.Loading)
         
@@ -109,7 +98,6 @@ class LyricService(
                                     // Not in notfound_lyrics yet, save it
                                     logger.info("Adding videoId: $videoId to notfound_lyrics")
                                     val notFoundLyric = NotFoundLyric(
-                                        id = Uuid.random(),
                                         videoId = videoId,
                                         addedDate = LocalDateTime.now()
                                     )
@@ -182,6 +170,27 @@ class LyricService(
         
         try {
             val lyric = lyricDTO.toEntity()
+            
+            // Check for duplicate data based on sha256hash
+            logger.debug("saveLyric --> Checking for duplicate lyric with sha256hash: ${lyric.sha256hash}")
+            val existingResult = lyricRepository.findBySha256Hash(lyric.sha256hash).last()
+            
+            when (existingResult) {
+                is Resource.Success -> {
+                    if (existingResult.data != null) {
+                        // Lyric with this sha256hash already exists
+                        logger.warn("saveLyric --> Duplicate lyric detected with sha256hash: ${lyric.sha256hash}")
+                        emit(Resource.duplicateError("This lyrics already exists"))
+                        return@flow
+                    }
+                }
+                is Resource.Error -> {
+                    logger.warn("saveLyric --> Error checking for duplicate lyric: ${existingResult.message}")
+                    // Continue to save if unable to check for duplicates
+                }
+                else -> {} // Loading state
+            }
+            
             val saveResult = lyricRepository.save(lyric).last()
             
             when (saveResult) {
@@ -255,12 +264,47 @@ class LyricService(
             .catchToResourceError()
     }
     
-    fun saveTranslatedLyric(translatedLyricDTO: TranslatedLyricDTO): Flow<Resource<TranslatedLyricDTO>> {
-        val translatedLyric = translatedLyricDTO.toEntity()
-        return translatedLyricRepository.save(translatedLyric)
-            .mapSuccess { it.toDTO() }
-            .catchToResourceError()
-    }
+    fun saveTranslatedLyric(translatedLyricDTO: TranslatedLyricDTO): Flow<Resource<TranslatedLyricDTO>> = flow {
+        emit(Resource.Loading)
+        
+        try {
+            val translatedLyric = translatedLyricDTO.toEntity()
+            
+            // Check for duplicate data based on sha256hash
+            logger.debug("saveTranslatedLyric --> Checking for duplicate translated lyric with sha256hash: ${translatedLyric.sha256hash}")
+            val existingResult = translatedLyricRepository.findBySha256Hash(translatedLyric.sha256hash).last()
+            
+            when (existingResult) {
+                is Resource.Success -> {
+                    if (existingResult.data != null) {
+                        // Translated lyric with this sha256hash already exists
+                        logger.warn("saveTranslatedLyric --> Duplicate translated lyric detected with sha256hash: ${translatedLyric.sha256hash}")
+                        emit(Resource.duplicateError("This translated lyrics already exists"))
+                        return@flow
+                    }
+                }
+                is Resource.Error -> {
+                    logger.warn("saveTranslatedLyric --> Error checking for duplicate translated lyric: ${existingResult.message}")
+                    // Continue to save if unable to check for duplicates
+                }
+                else -> {} // Loading state
+            }
+            
+            val saveResult = translatedLyricRepository.save(translatedLyric).last()
+            
+            when (saveResult) {
+                is Resource.Success -> {
+                    emit(Resource.Success(saveResult.data.toDTO()))
+                }
+                is Resource.Error -> {
+                    emit(Resource.Error(saveResult.message, saveResult.exception))
+                }
+                else -> {} // Loading state
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error("Error saving translated lyric", e))
+        }
+    }.flowOn(kotlinx.coroutines.Dispatchers.IO)
     
     fun deleteTranslatedLyric(id: String): Flow<Resource<Boolean>> {
         return translatedLyricRepository.delete(id)
@@ -293,12 +337,47 @@ class LyricService(
             .catchToResourceError()
     }
     
-    fun saveNotFoundLyric(notFoundLyricDTO: NotFoundLyricDTO): Flow<Resource<NotFoundLyricDTO>> {
-        val notFoundLyric = notFoundLyricDTO.toEntity()
-        return notFoundLyricRepository.save(notFoundLyric)
-            .mapSuccess { it.toDTO() }
-            .catchToResourceError()
-    }
+    fun saveNotFoundLyric(notFoundLyricDTO: NotFoundLyricDTO): Flow<Resource<NotFoundLyricDTO>> = flow {
+        emit(Resource.Loading)
+        
+        try {
+            val notFoundLyric = notFoundLyricDTO.toEntity()
+            
+            // Check for duplicate data based on videoId
+            logger.debug("saveNotFoundLyric --> Checking for duplicate notfound lyric with videoId: ${notFoundLyric.videoId}")
+            val existingResult = notFoundLyricRepository.findByVideoId(notFoundLyric.videoId).last()
+            
+            when (existingResult) {
+                is Resource.Success -> {
+                    if (existingResult.data != null) {
+                        // NotFound lyric with this videoId already exists
+                        logger.warn("saveNotFoundLyric --> Duplicate notfound lyric detected with videoId: ${notFoundLyric.videoId}")
+                        emit(Resource.duplicateError("VideoId already exists in notfound lyrics list"))
+                        return@flow
+                    }
+                }
+                is Resource.Error -> {
+                    logger.warn("saveNotFoundLyric --> Error checking for duplicate notfound lyric: ${existingResult.message}")
+                    // Continue to save if unable to check for duplicates
+                }
+                else -> {} // Loading state
+            }
+            
+            val saveResult = notFoundLyricRepository.save(notFoundLyric).last()
+            
+            when (saveResult) {
+                is Resource.Success -> {
+                    emit(Resource.Success(saveResult.data.toDTO()))
+                }
+                is Resource.Error -> {
+                    emit(Resource.Error(saveResult.message, saveResult.exception))
+                }
+                else -> {} // Loading state
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error("Error saving notfound lyric", e))
+        }
+    }.flowOn(kotlinx.coroutines.Dispatchers.IO)
     
     fun deleteNotFoundLyric(id: String): Flow<Resource<Boolean>> {
         return notFoundLyricRepository.delete(id)
@@ -320,10 +399,8 @@ class LyricService(
             .catchToResourceError()
     }
     
-    @OptIn(ExperimentalUuidApi::class)
     private fun Lyric.toDTO(): LyricDTO {
         return LyricDTO(
-            id = id.toString(),
             videoId = videoId,
             songTitle = songTitle,
             artistName = artistName,
@@ -338,10 +415,9 @@ class LyricService(
         )
     }
     
-    @OptIn(ExperimentalUuidApi::class)
     private fun LyricDTO.toEntity(): Lyric {
         return Lyric(
-            id = Uuid.parse(id),
+            id = ID.unique(),
             videoId = videoId,
             songTitle = songTitle,
             artistName = artistName,
@@ -358,10 +434,8 @@ class LyricService(
     
     // ========== TranslatedLyric Conversion Methods ==========
     
-    @OptIn(ExperimentalUuidApi::class)
     private fun TranslatedLyric.toDTO(): TranslatedLyricDTO {
         return TranslatedLyricDTO(
-            id = id.toString(),
             videoId = videoId,
             translatedLyric = translatedLyric,
             language = language,
@@ -371,10 +445,9 @@ class LyricService(
         )
     }
     
-    @OptIn(ExperimentalUuidApi::class)
     private fun TranslatedLyricDTO.toEntity(): TranslatedLyric {
         return TranslatedLyric(
-            id = Uuid.parse(id),
+            id = this.getUniqueId(),
             videoId = videoId,
             translatedLyric = translatedLyric,
             language = language,
@@ -386,19 +459,15 @@ class LyricService(
     
     // ========== NotFoundLyric Conversion Methods ==========
     
-    @OptIn(ExperimentalUuidApi::class)
     private fun NotFoundLyric.toDTO(): NotFoundLyricDTO {
         return NotFoundLyricDTO(
-            id = id.toString(),
             videoId = videoId,
             addedDate = addedDate
         )
     }
     
-    @OptIn(ExperimentalUuidApi::class)
     private fun NotFoundLyricDTO.toEntity(): NotFoundLyric {
         return NotFoundLyric(
-            id = Uuid.parse(id),
             videoId = videoId,
             addedDate = addedDate
         )

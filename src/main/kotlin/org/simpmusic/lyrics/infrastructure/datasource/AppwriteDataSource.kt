@@ -221,7 +221,7 @@ class AppwriteDataSource(
                 databaseId = databaseId,
                 collectionId = lyricsCollectionId,
                 key = "id",
-                size = 36,
+                size = 64,
                 required = true
             )
             logger.info("Created id attribute: ${idAttribute.key}")
@@ -338,6 +338,17 @@ class AppwriteDataSource(
                 required = false
             )
             logger.info("Created contributorEmail attribute: ${contributorEmailAttribute.key}")
+
+            // Create sha256hash attribute
+            logger.info("Creating sha256hash attribute...")
+            val sha256hashAttribute = databases.createStringAttribute(
+                databaseId = databaseId,
+                collectionId = lyricsCollectionId,
+                key = "sha256hash",
+                size = 64,
+                required = true
+            )
+            logger.info("Created sha256hash attribute: ${sha256hashAttribute.key}")
             
             logger.info("Creating indexes...")
             

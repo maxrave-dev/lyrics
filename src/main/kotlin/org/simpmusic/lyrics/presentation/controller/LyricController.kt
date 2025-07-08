@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import org.simpmusic.lyrics.application.dto.LyricDTO
 import org.simpmusic.lyrics.application.dto.TranslatedLyricDTO
 import org.simpmusic.lyrics.application.dto.NotFoundLyricDTO
+import org.simpmusic.lyrics.application.dto.ErrorResponseDTO
 import org.simpmusic.lyrics.application.service.LyricService
 import org.simpmusic.lyrics.domain.model.Resource
 import org.slf4j.LoggerFactory
@@ -104,15 +105,19 @@ class LyricController(
     }
 
     @PostMapping
-    suspend fun createLyric(@RequestBody lyricDTO: LyricDTO): ResponseEntity<LyricDTO> {
+    suspend fun createLyric(@RequestBody lyricDTO: LyricDTO): ResponseEntity<Any> {
         return withContext(ioDispatcher) {
-            logger.debug("Creating Lyric")
+            logger.debug("createLyric --> Creating Lyric")
             val result = lyricService.saveLyric(lyricDTO).last()
             when (result) {
-                is Resource.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.data)
+                is Resource.Success -> {
+                    logger.debug("createLyric --> Successfully created lyric")
+                    ResponseEntity.status(HttpStatus.CREATED).body(result.data)
+                }
                 is Resource.Error -> {
-                    logger.error("Failed to create lyric: ${result.message}", result.exception)
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                    logger.error("createLyric --> Failed to create lyric: ${result.message}", result.exception)
+                    val errorResponse = result.toErrorResponse()
+                    ResponseEntity.status(HttpStatus.valueOf(errorResponse.code)).body(errorResponse)
                 }
                 is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
             }
@@ -203,15 +208,19 @@ class LyricController(
     }
     
     @PostMapping("/translated")
-    suspend fun createTranslatedLyric(@RequestBody translatedLyricDTO: TranslatedLyricDTO): ResponseEntity<TranslatedLyricDTO> {
+    suspend fun createTranslatedLyric(@RequestBody translatedLyricDTO: TranslatedLyricDTO): ResponseEntity<Any> {
         return withContext(ioDispatcher) {
-            logger.debug("Creating translated lyric")
+            logger.debug("createTranslatedLyric --> Creating translated lyric")
             val result = lyricService.saveTranslatedLyric(translatedLyricDTO).last()
             when (result) {
-                is Resource.Success -> ResponseEntity.status(HttpStatus.CREATED).body(result.data)
+                is Resource.Success -> {
+                    logger.debug("createTranslatedLyric --> Successfully created translated lyric")
+                    ResponseEntity.status(HttpStatus.CREATED).body(result.data)
+                }
                 is Resource.Error -> {
-                    logger.error("Failed to create translated lyric: ${result.message}", result.exception)
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                    logger.error("createTranslatedLyric --> Failed to create translated lyric: ${result.message}", result.exception)
+                    val errorResponse = result.toErrorResponse()
+                    ResponseEntity.status(HttpStatus.valueOf(errorResponse.code)).body(errorResponse)
                 }
                 is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
             }

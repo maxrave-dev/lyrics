@@ -1,5 +1,6 @@
 package org.simpmusic.lyrics.infrastructure.persistence
 
+import io.appwrite.ID
 import io.appwrite.Query
 import io.appwrite.exceptions.AppwriteException
 import io.appwrite.models.Document
@@ -11,17 +12,15 @@ import kotlinx.coroutines.flow.flowOn
 import org.simpmusic.lyrics.domain.model.Lyric
 import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.domain.repository.LyricRepository
+import org.simpmusic.lyrics.extensions.sha256
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Repository
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Appwrite implementation of the LyricRepository
  */
 @Repository("appwriteLyricRepositoryImpl")
-@OptIn(ExperimentalUuidApi::class)
 class AppwriteLyricRepository(
     private val databases: Databases,
     @Qualifier("databaseId") private val databaseId: String,
@@ -190,6 +189,32 @@ class AppwriteLyricRepository(
         logger.debug("search completed for keywords: $keywords")
     }.flowOn(Dispatchers.IO)
 
+    override fun findBySha256Hash(sha256hash: String): Flow<Resource<Lyric?>> = flow {
+        logger.debug("findBySha256Hash --> Started for hash: $sha256hash")
+        emit(Resource.Loading)
+        
+        runCatching {
+            logger.debug("findBySha256Hash --> Calling databases.listDocuments with sha256hash query: $sha256hash")
+            databases.listDocuments(
+                databaseId = databaseId,
+                collectionId = collectionId,
+                queries = listOf(Query.equal("sha256hash", sha256hash))
+            )
+        }.fold(
+            onSuccess = { documents ->
+                val lyric = documents.documents.firstOrNull()?.let { documentToLyric(it) }
+                logger.debug("findBySha256Hash --> Found lyric with sha256hash: $sha256hash: ${lyric != null}")
+                emit(Resource.Success(lyric))
+            },
+            onFailure = { e ->
+                e.printStackTrace()
+                logger.error("findBySha256Hash --> Error finding lyric by sha256hash: $sha256hash", e)
+                emit(Resource.Error("Failed to find lyric by sha256hash: ${e.message}", e as? Exception))
+            }
+        )
+        logger.debug("findBySha256Hash --> Completed for hash: $sha256hash")
+    }.flowOn(Dispatchers.IO)
+
     override fun save(lyric: Lyric): Flow<Resource<Lyric>> = flow {
         logger.debug("save started for lyric id: ${lyric.id}")
         emit(Resource.Loading)
@@ -206,7 +231,8 @@ class AppwriteLyricRepository(
             "richSyncLyrics" to lyric.richSyncLyrics,
             "vote" to lyric.vote,
             "contributor" to lyric.contributor,
-            "contributorEmail" to lyric.contributorEmail
+            "contributorEmail" to lyric.contributorEmail,
+            "sha256hash" to lyric.sha256hash
         )
         logger.debug("Prepared data for save: ${data.keys}")
         
@@ -295,26 +321,33 @@ class AppwriteLyricRepository(
         logger.debug("delete completed for id: $id")
     }.flowOn(Dispatchers.IO)
     
-    @OptIn(ExperimentalUuidApi::class)
     private fun documentToLyric(document: Document<Map<String, Any>>): Lyric {
         logger.debug("Converting document to Lyric: ${document.id}")
         logger.debug("Document data keys: ${document.data.keys}")
         logger.debug("Document data: $document.data")
         
         runCatching {
+            val videoId = document.data["videoId"].toString()
+            val durationSeconds = document.data["durationSeconds"].toString().toInt()
+            val plainLyric = document.data["plainLyric"].toString()
+            val syncedLyrics = document.data["syncedLyrics"]?.toString()
+            val richSyncLyrics = document.data["richSyncLyrics"]?.toString()
+            
             val lyric = Lyric(
-                id = Uuid.parse(document.data["id"].toString()),
-                videoId = document.data["videoId"].toString(),
+                id = document.data["id"].toString(),
+                videoId = videoId,
                 songTitle = document.data["songTitle"].toString(),
                 artistName = document.data["artistName"].toString(),
                 albumName = document.data["albumName"].toString(),
-                durationSeconds = document.data["durationSeconds"].toString().toInt(),
-                plainLyric = document.data["plainLyric"].toString(),
-                syncedLyrics = document.data["syncedLyrics"]?.toString(),
-                richSyncLyrics = document.data["richSyncLyrics"]?.toString(),
+                durationSeconds = durationSeconds,
+                plainLyric = plainLyric,
+                syncedLyrics = syncedLyrics,
+                richSyncLyrics = richSyncLyrics,
                 vote = document.data["vote"].toString().toInt(),
                 contributor = document.data["contributor"].toString(),
-                contributorEmail = document.data["contributorEmail"].toString()
+                contributorEmail = document.data["contributorEmail"].toString(),
+                sha256hash = document.data["sha256hash"]?.toString() 
+                    ?: "$videoId-$durationSeconds-$plainLyric-$syncedLyrics-$richSyncLyrics".sha256()
             )
             logger.debug("Successfully converted document to Lyric: ${lyric.id}")
             return lyric

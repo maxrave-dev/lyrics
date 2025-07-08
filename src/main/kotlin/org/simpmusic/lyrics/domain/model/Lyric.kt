@@ -1,13 +1,12 @@
 package org.simpmusic.lyrics.domain.model
 
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import org.simpmusic.lyrics.extensions.sha256
 
 /**
  * Core domain entity representing song lyrics
  */
-data class Lyric @OptIn(ExperimentalUuidApi::class) constructor(
-    val id: Uuid,
+data class Lyric(
+    val id: String,
     val videoId: String,
     val songTitle: String,
     val artistName: String,
@@ -19,4 +18,5 @@ data class Lyric @OptIn(ExperimentalUuidApi::class) constructor(
     val vote: Int,
     val contributor: String,
     val contributorEmail: String,
+    val sha256hash: String = "$videoId-$durationSeconds-$plainLyric-$syncedLyrics-$richSyncLyrics".sha256()
 )

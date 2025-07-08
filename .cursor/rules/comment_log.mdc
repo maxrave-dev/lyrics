@@ -1,8 +1,8 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
-Please comment and log in English
+Please comment and log with English
 
 When logging, please insert "name of function" --> "content"

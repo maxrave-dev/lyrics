@@ -1,6 +1,6 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 In anywhere return Resource sealed class (Success, Loading, Error), please use Flow.last() or lastOrNull(), because the controller need a return value, if you use last(), the return value will be exactly. Use .onEach {}, then log if the function is in Loading state.
