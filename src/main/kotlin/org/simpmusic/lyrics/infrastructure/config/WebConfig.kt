@@ -15,12 +15,11 @@ class WebConfig(private val hmacInterceptor: HmacInterceptor) : WebMvcConfigurer
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/api/**")
             .allowedOrigins("*")
-            .allowedMethods("GET", "POST", "PUT", "DELETE")
+            .allowedMethods("GET", "POST", "PUT")
             .maxAge(3600)
     }
     
     override fun addInterceptors(registry: InterceptorRegistry) {
-        // Đăng ký HMAC interceptor cho tất cả API
         registry.addInterceptor(hmacInterceptor)
             .addPathPatterns("/api/lyrics/**")
     }

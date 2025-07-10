@@ -81,7 +81,6 @@ GET    /api/lyrics/search/title?title= # Search by song title
 GET    /api/lyrics/search/artist?artist= # Search by artist
 GET    /api/lyrics/search?q=           # Full-text search
 POST   /api/lyrics                     # Create new lyrics
-DELETE /api/lyrics/{id}                # Delete lyrics
 ```
 
 #### Translated Lyrics
@@ -89,14 +88,6 @@ DELETE /api/lyrics/{id}                # Delete lyrics
 GET    /api/lyrics/translated/{videoId}    # Get translations
 GET    /api/lyrics/translated/{videoId}/{language} # Get specific translation
 POST   /api/lyrics/translated              # Create translation
-DELETE /api/lyrics/translated/{id}         # Delete translation
-```
-
-#### Admin Operations
-```http
-POST   /api/admin/initialize              # Initialize database
-POST   /api/admin/clear                   # Clear all data
-POST   /api/admin/rebuild                 # Rebuild database
 ```
 
 ## Security Features
@@ -112,7 +103,7 @@ All non-GET requests (POST, PUT, DELETE, PATCH) require HMAC authentication:
 
 1. Generate a timestamp (current time in milliseconds)
 2. Create data string: `timestamp + request_uri`
-3. Generate HMAC using the shared secret key
+3. Generate HMAC using the shared secret key, checkout `generateHmac` function in `HmacService.kt` for full algorithm. 
 4. Add headers to your request:
    - `X-Timestamp`: Your timestamp
    - `X-HMAC`: Your generated HMAC token
@@ -131,12 +122,17 @@ curl -X POST "http://localhost:8080/api/lyrics" \
   -d '{"videoId":"dQw4w9WgXcQ", ...}'
 ```
 
-For testing, you can use the helper endpoint:
-```http
-GET /api/security/generate-hmac-example?uri=/api/lyrics
-```
-
 This returns a valid HMAC and timestamp for immediate use (valid for 5 minutes).
+
+## Roadmap
+- [x] Basic CRUD operations for lyrics
+- [x] Security for non-GET requests
+- [x] Rate limiting
+- [ ] Input data
+- [ ] Public server
+- [ ] Frontend integration
+- [ ] Automated find not-found lyrics
+- [ ] Automated remove negative votes lyrics
 
 ## License
 

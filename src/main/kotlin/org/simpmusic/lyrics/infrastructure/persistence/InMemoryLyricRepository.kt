@@ -68,9 +68,4 @@ class InMemoryLyricRepository : LyricRepository {
         lyrics[lyric.id.toString()] = lyric
         emit(Resource.Success(lyric))
     }.flowOn(Dispatchers.IO)
-
-    override fun delete(id: String): Flow<Resource<Boolean>> = flow {
-        emit(Resource.Loading)
-        emit(Resource.Success(lyrics.remove(id) != null))
-    }.flowOn(Dispatchers.IO)
 }

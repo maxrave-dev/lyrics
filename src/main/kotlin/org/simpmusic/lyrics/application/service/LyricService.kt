@@ -59,18 +59,6 @@ class LyricService(
             .shareHot(serviceScope)
     }
     
-    /**
-     * Rebuild the database from scratch
-     * Uses shareHot to make the flow hot and allow multiple collectors
-     */
-    fun rebuildDatabase(): Flow<Resource<Boolean>> {
-        return appwriteDataSource.rebuildDatabase()
-            .logEach("Rebuild database")
-            .logCompletion("Rebuild database completed")
-            .catchToResourceError()
-            .shareHot(serviceScope)
-    }
-    
     fun getLyricById(id: String): Flow<Resource<LyricDTO?>> {
         return lyricRepository.findById(id)
             .mapSuccessNotNull { it.toDTO() }
@@ -226,12 +214,7 @@ class LyricService(
             emit(Resource.Error("Error saving lyric", e))
         }
     }.flowOn(kotlinx.coroutines.Dispatchers.IO)
-    
-    fun deleteLyric(id: String): Flow<Resource<Boolean>> {
-        return lyricRepository.delete(id)
-            .catchToResourceError()
-    }
-    
+
     // ========== TranslatedLyric Methods ==========
     
     fun getTranslatedLyricById(id: String): Flow<Resource<TranslatedLyricDTO?>> {
@@ -249,18 +232,6 @@ class LyricService(
     fun getTranslatedLyricByVideoIdAndLanguage(videoId: String, language: String): Flow<Resource<TranslatedLyricDTO?>> {
         return translatedLyricRepository.findByVideoIdAndLanguage(videoId, language)
             .mapSuccessNotNull { it.toDTO() }
-            .catchToResourceError()
-    }
-    
-    fun getTranslatedLyricsByLanguage(language: String): Flow<Resource<List<TranslatedLyricDTO>>> {
-        return translatedLyricRepository.findByLanguage(language)
-            .mapSuccess { translatedLyrics -> translatedLyrics.map { it.toDTO() } }
-            .catchToResourceError()
-    }
-    
-    fun getAllTranslatedLyrics(): Flow<Resource<List<TranslatedLyricDTO>>> {
-        return translatedLyricRepository.findAll()
-            .mapSuccess { translatedLyrics -> translatedLyrics.map { it.toDTO() } }
             .catchToResourceError()
     }
     
@@ -305,12 +276,7 @@ class LyricService(
             emit(Resource.Error("Error saving translated lyric", e))
         }
     }.flowOn(kotlinx.coroutines.Dispatchers.IO)
-    
-    fun deleteTranslatedLyric(id: String): Flow<Resource<Boolean>> {
-        return translatedLyricRepository.delete(id)
-            .catchToResourceError()
-    }
-    
+
     // ========== NotFoundLyric Methods ==========
     
     fun getNotFoundLyricById(id: String): Flow<Resource<NotFoundLyricDTO?>> {

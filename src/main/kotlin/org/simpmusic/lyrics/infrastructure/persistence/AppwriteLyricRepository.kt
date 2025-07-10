@@ -1,6 +1,5 @@
 package org.simpmusic.lyrics.infrastructure.persistence
 
-import io.appwrite.ID
 import io.appwrite.Query
 import io.appwrite.exceptions.AppwriteException
 import io.appwrite.models.Document
@@ -288,37 +287,6 @@ class AppwriteLyricRepository(
             }
         )
         logger.debug("save completed for lyric id: ${lyric.id}")
-    }.flowOn(Dispatchers.IO)
-
-    override fun delete(id: String): Flow<Resource<Boolean>> = flow {
-        logger.debug("delete started for id: $id")
-        emit(Resource.Loading)
-        
-        runCatching {
-            logger.debug("Calling databases.deleteDocument for id: $id")
-            databases.deleteDocument(
-                databaseId = databaseId,
-                collectionId = collectionId,
-                documentId = id
-            )
-        }.fold(
-            onSuccess = {
-                logger.debug("Successfully deleted document for id: $id")
-                emit(Resource.Success(true))
-            },
-            onFailure = { e ->
-                e.printStackTrace()
-                logger.debug("Failed to delete document for id: $id, error: ${e.message}")
-                if (e is AppwriteException && e.code == 404) {
-                    logger.debug("Document not found (404) for delete id: $id")
-                    emit(Resource.Success(false))
-                } else {
-                    logger.error("Error deleting lyric with id: $id", e)
-                    emit(Resource.Error("Failed to delete lyric: ${e.message}", e as? Exception))
-                }
-            }
-        )
-        logger.debug("delete completed for id: $id")
     }.flowOn(Dispatchers.IO)
     
     private fun documentToLyric(document: Document<Map<String, Any>>): Lyric {

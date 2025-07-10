@@ -18,5 +18,4 @@ interface LyricRepository {
     fun search(keywords: String): Flow<Resource<List<Lyric>>>
     fun findBySha256Hash(sha256hash: String): Flow<Resource<Lyric?>>
     fun save(lyric: Lyric): Flow<Resource<Lyric>>
-    fun delete(id: String): Flow<Resource<Boolean>>
 }
