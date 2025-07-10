@@ -99,6 +99,45 @@ POST   /api/admin/clear                   # Clear all data
 POST   /api/admin/rebuild                 # Rebuild database
 ```
 
+## Security Features
+
+### Rate Limiting
+The API is protected with rate limiting to prevent abuse:
+- 30 requests per minute per IP address
+- Applies to all API endpoints
+- When limit is exceeded, returns HTTP 429 (Too Many Requests)
+
+### HMAC Authentication
+All non-GET requests (POST, PUT, DELETE, PATCH) require HMAC authentication:
+
+1. Generate a timestamp (current time in milliseconds)
+2. Create data string: `timestamp + request_uri`
+3. Generate HMAC using the shared secret key
+4. Add headers to your request:
+   - `X-Timestamp`: Your timestamp
+   - `X-HMAC`: Your generated HMAC token
+
+Example using curl:
+```bash
+# Headers required
+X-Timestamp: 1630000000000
+X-HMAC: base64EncodedHmacToken
+
+# Example command
+curl -X POST "http://localhost:8080/api/lyrics" \
+  -H "Content-Type: application/json" \
+  -H "X-Timestamp: 1630000000000" \
+  -H "X-HMAC: base64EncodedHmacToken" \
+  -d '{"videoId":"dQw4w9WgXcQ", ...}'
+```
+
+For testing, you can use the helper endpoint:
+```http
+GET /api/security/generate-hmac-example?uri=/api/lyrics
+```
+
+This returns a valid HMAC and timestamp for immediate use (valid for 5 minutes).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -119,15 +158,20 @@ src="https://raw.githubusercontent.com/liberapay/liberapay.com/master/www/assets
  </p>
 
 ## SimpMusic is sponsored by:
+<a href="https://www.digitalocean.com/?refcode=d7f6eedfb9a9&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge"><img src="https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg" width="300" alt="DigitalOcean Referral Badge" /></a>
+<br>
 <a href="https://crowdin.com">
 <img src="https://support.crowdin.com/assets/logos/plate/png/crowdin-logo-with-plate.png" width="300"/>
 </a>
+<br>
 <a href="https://sentry.io">
 <img src="https://github.com/maxrave-dev/SimpMusic/blob/dev/asset/sentry.svg?raw=true" width="300"/>
 </a>
 <br>
 
-Crowdin and Sentry, both have free enterprise plan for Open-source project. Follow the URLs: 
+Get free $200 credit over 60 days on DigitalOcean: [GET NOW](https://www.digitalocean.com/?refcode=d7f6eedfb9a9&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
+
+Crowdin and Sentry both have a free enterprise plan for Open-source projects. Follow the URLs:
 - [Open Source License Request Form | Crowdin](https://crowdin.com/page/open-source-project-setup-request)
 - [Sentry for Open Source | Sentry](https://sentry.io/for/open-source/)
 

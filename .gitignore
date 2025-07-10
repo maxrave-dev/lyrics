@@ -43,3 +43,6 @@ out/
 #src/main/resources/application.properties
 ### But not .env files ###
 .env
+
+### MCP server ###
+.cursor/mcp.json

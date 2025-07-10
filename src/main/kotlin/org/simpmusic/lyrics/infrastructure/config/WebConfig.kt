@@ -4,22 +4,24 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Bean
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 
 /**
  * Application configuration for web components
  */
 @Configuration
-class WebConfig {
+class WebConfig(private val hmacInterceptor: HmacInterceptor) : WebMvcConfigurer {
 
-    @Bean
-    fun corsConfigurer(): WebMvcConfigurer {
-        return object : WebMvcConfigurer {
-            override fun addCorsMappings(registry: CorsRegistry) {
-                registry.addMapping("/api/**")
-                    .allowedOrigins("*")
-                    .allowedMethods("GET", "POST", "PUT", "DELETE")
-                    .maxAge(3600)
-            }
-        }
+    override fun addCorsMappings(registry: CorsRegistry) {
+        registry.addMapping("/api/**")
+            .allowedOrigins("*")
+            .allowedMethods("GET", "POST", "PUT", "DELETE")
+            .maxAge(3600)
+    }
+    
+    override fun addInterceptors(registry: InterceptorRegistry) {
+        // Đăng ký HMAC interceptor cho tất cả API
+        registry.addInterceptor(hmacInterceptor)
+            .addPathPatterns("/api/lyrics/**")
     }
 }

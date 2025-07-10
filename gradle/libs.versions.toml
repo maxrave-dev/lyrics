@@ -10,12 +10,17 @@ coroutines = "1.10.2"
 appwrite = "9.0.0"
 kotlinxSerializationJson = "1.8.1"
 swagger = "2.8.9"
+bucket4j = "0.12.10"
+jcache = "1.1.1"
+caffeine = "3.1.8"
 
 [libraries]
 # Spring Boot
 spring-boot-starter-security = { group = "org.springframework.boot", name = "spring-boot-starter-security" }
 spring-boot-starter-web = { group = "org.springframework.boot", name = "spring-boot-starter-web" }
 spring-boot-starter-test = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+spring-boot-starter-cache = { group = "org.springframework.boot", name = "spring-boot-starter-cache" }
+spring-boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
 
 # Jackson
 jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin" }
@@ -42,6 +47,12 @@ appwrite-sdk = { group = "io.appwrite", name = "sdk-for-kotlin", version.ref = "
 
 # Swagger
 spring-swagger = { group = "org.springdoc", name = "springdoc-openapi-starter-webmvc-ui", version.ref = "swagger" }
+
+# Rate Limiting
+bucket4j-spring-boot-starter = { group = "com.giffing.bucket4j.spring.boot.starter", name = "bucket4j-spring-boot-starter", version.ref = "bucket4j" }
+javax-cache-api = { group = "javax.cache", name = "cache-api", version.ref = "jcache" }
+caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeine" }
+caffeine-jcache = { group = "com.github.ben-manes.caffeine", name = "jcache", version.ref = "caffeine" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
