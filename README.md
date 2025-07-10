@@ -107,6 +107,7 @@ All non-GET requests (POST, PUT, DELETE, PATCH) require HMAC authentication:
 4. Add headers to your request:
    - `X-Timestamp`: Your timestamp
    - `X-HMAC`: Your generated HMAC token
+5. Your HMAC token is available in 5 minutes
 
 Example using curl:
 ```bash
@@ -121,8 +122,6 @@ curl -X POST "http://localhost:8080/api/lyrics" \
   -H "X-HMAC: base64EncodedHmacToken" \
   -d '{"videoId":"dQw4w9WgXcQ", ...}'
 ```
-
-This returns a valid HMAC and timestamp for immediate use (valid for 5 minutes).
 
 ## Roadmap
 - [x] Basic CRUD operations for lyrics
