@@ -16,6 +16,13 @@ import org.simpmusic.lyrics.application.dto.LyricDTO
 import org.simpmusic.lyrics.application.dto.TranslatedLyricDTO
 import org.simpmusic.lyrics.application.dto.NotFoundLyricDTO
 import org.simpmusic.lyrics.application.dto.ErrorResponseDTO
+import org.simpmusic.lyrics.application.dto.VoteDTO
+import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.NotFoundLyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
+import org.simpmusic.lyrics.application.dto.response.LyricResponseDTO
+import org.simpmusic.lyrics.application.dto.response.NotFoundLyricResponseDTO
+import org.simpmusic.lyrics.application.dto.response.TranslatedLyricResponseDTO
 import org.simpmusic.lyrics.application.service.LyricService
 import org.simpmusic.lyrics.domain.model.Resource
 import org.slf4j.LoggerFactory
@@ -33,7 +40,7 @@ class LyricController(
     private val logger = LoggerFactory.getLogger(LyricController::class.java)
 
     @GetMapping("/{videoId}")
-    suspend fun getLyricsByVideoId(@PathVariable videoId: String): ResponseEntity<List<LyricDTO>> {
+    suspend fun getLyricsByVideoId(@PathVariable videoId: String): ResponseEntity<List<LyricResponseDTO>> {
         return withContext(ioDispatcher) {
             logger.debug("Getting lyrics for videoId: $videoId")
             val result = lyricService.getLyricsByVideoId(videoId).last()
@@ -56,7 +63,7 @@ class LyricController(
     }
 
     @GetMapping("/search/title")
-    suspend fun getLyricsBySongTitle(@RequestParam title: String): ResponseEntity<List<LyricDTO>> {
+    suspend fun getLyricsBySongTitle(@RequestParam title: String): ResponseEntity<List<LyricResponseDTO>> {
         return withContext(ioDispatcher) {
             val result = lyricService.getLyricsBySongTitle(title).last()
             when (result) {
@@ -71,7 +78,7 @@ class LyricController(
     }
 
     @GetMapping("/search/artist")
-    suspend fun getLyricsByArtist(@RequestParam artist: String): ResponseEntity<List<LyricDTO>> {
+    suspend fun getLyricsByArtist(@RequestParam artist: String): ResponseEntity<List<LyricResponseDTO>> {
         return withContext(ioDispatcher) {
             val result = lyricService.getLyricsByArtist(artist).last()
             when (result) {
@@ -86,7 +93,7 @@ class LyricController(
     }
 
     @GetMapping("/search")
-    suspend fun searchLyrics(@RequestParam q: String): ResponseEntity<List<LyricDTO>> {
+    suspend fun searchLyrics(@RequestParam q: String): ResponseEntity<List<LyricResponseDTO>> {
         return withContext(ioDispatcher) {
             logger.debug("Searching lyrics with keywords: $q")
             val result = lyricService.searchLyrics(q).last()
@@ -105,10 +112,10 @@ class LyricController(
     }
 
     @PostMapping
-    suspend fun createLyric(@RequestBody lyricDTO: LyricDTO): ResponseEntity<Any> {
+    suspend fun createLyric(@RequestBody lyricRequestDTO: LyricRequestDTO): ResponseEntity<Any> {
         return withContext(ioDispatcher) {
             logger.debug("createLyric --> Creating Lyric")
-            val result = lyricService.saveLyric(lyricDTO).last()
+            val result = lyricService.saveLyric(lyricRequestDTO).last()
             when (result) {
                 is Resource.Success -> {
                     logger.debug("createLyric --> Successfully created lyric")
@@ -127,7 +134,7 @@ class LyricController(
     // ========== TranslatedLyrics API Endpoints ==========
     
     @GetMapping("/translated/{videoId}")
-    suspend fun getTranslatedLyricsByVideoId(@PathVariable videoId: String): ResponseEntity<List<TranslatedLyricDTO>> {
+    suspend fun getTranslatedLyricsByVideoId(@PathVariable videoId: String): ResponseEntity<List<TranslatedLyricResponseDTO>> {
         return withContext(ioDispatcher) {
             logger.debug("Getting translated lyrics for videoId: $videoId")
             val result = lyricService.getTranslatedLyricsByVideoId(videoId).last()
@@ -149,7 +156,7 @@ class LyricController(
     suspend fun getTranslatedLyricByVideoIdAndLanguage(
         @PathVariable videoId: String,
         @PathVariable language: String
-    ): ResponseEntity<TranslatedLyricDTO> {
+    ): ResponseEntity<TranslatedLyricResponseDTO> {
         return withContext(ioDispatcher) {
             logger.debug("Getting translated lyrics for videoId: $videoId, language: $language")
             val result = lyricService.getTranslatedLyricByVideoIdAndLanguage(videoId, language).last()
@@ -170,10 +177,10 @@ class LyricController(
     }
     
     @PostMapping("/translated")
-    suspend fun createTranslatedLyric(@RequestBody translatedLyricDTO: TranslatedLyricDTO): ResponseEntity<Any> {
+    suspend fun createTranslatedLyric(@RequestBody translatedLyricRequestDTO: TranslatedLyricRequestDTO): ResponseEntity<Any> {
         return withContext(ioDispatcher) {
             logger.debug("createTranslatedLyric --> Creating translated lyric")
-            val result = lyricService.saveTranslatedLyric(translatedLyricDTO).last()
+            val result = lyricService.saveTranslatedLyric(translatedLyricRequestDTO).last()
             when (result) {
                 is Resource.Success -> {
                     logger.debug("createTranslatedLyric --> Successfully created translated lyric")
@@ -181,6 +188,50 @@ class LyricController(
                 }
                 is Resource.Error -> {
                     logger.error("createTranslatedLyric --> Failed to create translated lyric: ${result.message}", result.exception)
+                    val errorResponse = result.toErrorResponse()
+                    ResponseEntity.status(HttpStatus.valueOf(errorResponse.code)).body(errorResponse)
+                }
+                is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
+            }
+        }
+    }
+
+    // ========== Vote API Endpoints ==========
+    
+    @PostMapping("/vote")
+    suspend fun voteLyric(@RequestBody voteDTO: VoteDTO): ResponseEntity<Any> {
+        return withContext(ioDispatcher) {
+            logger.debug("voteLyric --> Processing vote request for lyric id: ${voteDTO.id}")
+            val result = lyricService.voteLyric(voteDTO).last()
+            
+            when (result) {
+                is Resource.Success -> {
+                    logger.debug("voteLyric --> Successfully processed vote for lyric id: ${voteDTO.id}")
+                    ResponseEntity.ok(result.data)
+                }
+                is Resource.Error -> {
+                    logger.error("voteLyric --> Failed to process vote: ${result.message}", result.exception)
+                    val errorResponse = result.toErrorResponse()
+                    ResponseEntity.status(HttpStatus.valueOf(errorResponse.code)).body(errorResponse)
+                }
+                is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
+            }
+        }
+    }
+    
+    @PostMapping("/translated/vote")
+    suspend fun voteTranslatedLyric(@RequestBody voteDTO: VoteDTO): ResponseEntity<Any> {
+        return withContext(ioDispatcher) {
+            logger.debug("voteTranslatedLyric --> Processing vote request for translated lyric id: ${voteDTO.id}")
+            val result = lyricService.voteTranslatedLyric(voteDTO).last()
+            
+            when (result) {
+                is Resource.Success -> {
+                    logger.debug("voteTranslatedLyric --> Successfully processed vote for translated lyric id: ${voteDTO.id}")
+                    ResponseEntity.ok(result.data)
+                }
+                is Resource.Error -> {
+                    logger.error("voteTranslatedLyric --> Failed to process vote: ${result.message}", result.exception)
                     val errorResponse = result.toErrorResponse()
                     ResponseEntity.status(HttpStatus.valueOf(errorResponse.code)).body(errorResponse)
                 }

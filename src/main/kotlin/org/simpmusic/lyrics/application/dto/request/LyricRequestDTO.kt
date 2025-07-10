@@ -1,23 +1,23 @@
-package org.simpmusic.lyrics.application.dto
+package org.simpmusic.lyrics.application.dto.request
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import org.simpmusic.lyrics.application.dto.BaseDTO
 import org.simpmusic.lyrics.extensions.sha256
 
 /**
- * Data Transfer Object for Lyrics
- * Used to communicate between presentation layer and application layer
+ * Request Data Transfer Object for Lyrics
+ * Used for POST/PUT operations where client doesn't provide an ID
  */
-data class LyricDTO(
-    val id: String? = null,
+data class LyricRequestDTO(
     val videoId: String,
     val songTitle: String,
     val artistName: String,
     val albumName: String,
     val durationSeconds: Int,
     val plainLyric: String,
-    val syncedLyrics: String?,
-    val richSyncLyrics: String?,
-    val vote: Int,
+    val syncedLyrics: String? = null,
+    val richSyncLyrics: String? = null,
+    val vote: Int = 0,
     val contributor: String,
     val contributorEmail: String
 ): BaseDTO {
@@ -25,4 +25,4 @@ data class LyricDTO(
     override fun getUniqueId(): String {
         return "$videoId-$durationSeconds-$plainLyric-$syncedLyrics-$richSyncLyrics".sha256()
     }
-}
+} 

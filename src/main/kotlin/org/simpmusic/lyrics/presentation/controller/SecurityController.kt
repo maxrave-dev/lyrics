@@ -12,7 +12,7 @@ import java.time.Instant
  * Controller for security-related operations
  * ONLY for development purposes
  */
-/*
+///*
 @RestController
 @RequestMapping("/api/security")
 class SecurityController(private val hmacService: HmacService) {
@@ -26,7 +26,7 @@ class SecurityController(private val hmacService: HmacService) {
         val timestamp = Instant.now().toEpochMilli().toString()
         val data = "$timestamp$uri"
         val hmac = hmacService.generateHmac(data)
-        
+
         return HmacDTO(
             uri = uri,
             timestamp = timestamp,
@@ -34,4 +34,4 @@ class SecurityController(private val hmacService: HmacService) {
         )
     }
 }
- */
+// */

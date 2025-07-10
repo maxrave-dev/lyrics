@@ -1,4 +1,4 @@
-package org.simpmusic.lyrics.infrastructure.util
+package org.simpmusic.lyrics.extensions
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*

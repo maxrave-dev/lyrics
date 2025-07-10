@@ -8,6 +8,7 @@ import java.time.LocalDateTime
  * Used to communicate between presentation layer and application layer
  */
 data class NotFoundLyricDTO(
+    val id: String? = null,
     val videoId: String,
     val addedDate: LocalDateTime = LocalDateTime.now()
 ): BaseDTO {

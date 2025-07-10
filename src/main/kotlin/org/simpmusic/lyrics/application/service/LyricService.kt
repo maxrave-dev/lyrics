@@ -1,26 +1,33 @@
 package org.simpmusic.lyrics.application.service
 
-import io.appwrite.ID
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.last
-import org.simpmusic.lyrics.application.dto.LyricDTO
-import org.simpmusic.lyrics.application.dto.NotFoundLyricDTO
-import org.simpmusic.lyrics.application.dto.TranslatedLyricDTO
-import org.simpmusic.lyrics.domain.model.Lyric
+import org.simpmusic.lyrics.application.dto.VoteDTO
+import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
+import org.simpmusic.lyrics.application.dto.response.LyricResponseDTO
+import org.simpmusic.lyrics.application.dto.response.TranslatedLyricResponseDTO
 import org.simpmusic.lyrics.domain.model.NotFoundLyric
 import org.simpmusic.lyrics.domain.model.Resource
-import org.simpmusic.lyrics.domain.model.TranslatedLyric
 import org.simpmusic.lyrics.domain.repository.LyricRepository
 import org.simpmusic.lyrics.domain.repository.NotFoundLyricRepository
 import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
+import org.simpmusic.lyrics.extensions.catchToResourceError
+import org.simpmusic.lyrics.extensions.logCompletion
+import org.simpmusic.lyrics.extensions.logEach
+import org.simpmusic.lyrics.extensions.mapSuccess
+import org.simpmusic.lyrics.extensions.mapSuccessNotNull
+import org.simpmusic.lyrics.extensions.shareHot
 import org.simpmusic.lyrics.infrastructure.datasource.AppwriteDataSource
-import org.simpmusic.lyrics.infrastructure.util.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import org.simpmusic.lyrics.extensions.toEntity
+import org.simpmusic.lyrics.extensions.toResponseDTO
 
 /**
  * Application service implementing lyrics use cases
@@ -46,26 +53,14 @@ class LyricService(
             .catchToResourceError()
             .shareHot(serviceScope)
     }
-    
-    /**
-     * Clear all lyrics from the database
-     * Uses shareHot to make the flow hot and allow multiple collectors
-     */
-    fun clearAllLyrics(): Flow<Resource<Boolean>> {
-        return appwriteDataSource.clearAllLyrics()
-            .logEach("Clear all lyrics")
-            .logCompletion("Clear all lyrics completed")
-            .catchToResourceError()
-            .shareHot(serviceScope)
-    }
-    
-    fun getLyricById(id: String): Flow<Resource<LyricDTO?>> {
+
+    fun getLyricById(id: String): Flow<Resource<LyricResponseDTO?>> {
         return lyricRepository.findById(id)
-            .mapSuccessNotNull { it.toDTO() }
+            .mapSuccessNotNull { it.toResponseDTO() }
             .catchToResourceError()
     }
     
-    fun getLyricsByVideoId(videoId: String): Flow<Resource<List<LyricDTO>>> = flow {
+    fun getLyricsByVideoId(videoId: String): Flow<Resource<List<LyricResponseDTO>>> = flow {
         emit(Resource.Loading)
         
                 try {
@@ -112,10 +107,10 @@ class LyricService(
                         }
                         
                         // Return empty list regardless of notfound_lyrics operation result
-                        emit(Resource.Success(emptyList<LyricDTO>()))
+                        emit(Resource.Success(emptyList<LyricResponseDTO>()))
                     } else {
                         // Lyrics found, return them
-                        val lyricDTOs = lyricsResult.data.map { it.toDTO() }
+                        val lyricDTOs = lyricsResult.data.map { it.toResponseDTO() }
                         emit(Resource.Success(lyricDTOs))
                     }
                 }
@@ -127,37 +122,31 @@ class LyricService(
         } catch (e: Exception) {
             emit(Resource.Error("Error getting lyrics for videoId: $videoId", e))
         }
-    }.flowOn(kotlinx.coroutines.Dispatchers.IO)
+    }.flowOn(Dispatchers.IO)
     
-    fun getAllLyrics(): Flow<Resource<List<LyricDTO>>> {
-        return lyricRepository.findAll()
-            .mapSuccess { lyrics -> lyrics.map { it.toDTO() } }
-            .catchToResourceError()
-    }
-    
-    fun getLyricsBySongTitle(title: String): Flow<Resource<List<LyricDTO>>> {
+    fun getLyricsBySongTitle(title: String): Flow<Resource<List<LyricResponseDTO>>> {
         return lyricRepository.findBySongTitle(title)
-            .mapSuccess { lyrics -> lyrics.map { it.toDTO() } }
+            .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
     }
     
-    fun getLyricsByArtist(artist: String): Flow<Resource<List<LyricDTO>>> {
+    fun getLyricsByArtist(artist: String): Flow<Resource<List<LyricResponseDTO>>> {
         return lyricRepository.findByArtist(artist)
-            .mapSuccess { lyrics -> lyrics.map { it.toDTO() } }
+            .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
     }
     
-    fun searchLyrics(keywords: String): Flow<Resource<List<LyricDTO>>> {
+    fun searchLyrics(keywords: String): Flow<Resource<List<LyricResponseDTO>>> {
         return lyricRepository.search(keywords)
-            .mapSuccess { lyrics -> lyrics.map { it.toDTO() } }
+            .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
     }
     
-    fun saveLyric(lyricDTO: LyricDTO): Flow<Resource<LyricDTO>> = flow {
+    fun saveLyric(lyricRequestDTO: LyricRequestDTO): Flow<Resource<LyricResponseDTO>> = flow {
         emit(Resource.Loading)
         
         try {
-            val lyric = lyricDTO.toEntity()
+            val lyric = lyricRequestDTO.toEntity()
             
             // Check for duplicate data based on sha256hash
             logger.debug("saveLyric --> Checking for duplicate lyric with sha256hash: ${lyric.sha256hash}")
@@ -184,26 +173,26 @@ class LyricService(
             when (saveResult) {
                 is Resource.Success -> {
                     // When lyrics are successfully saved, remove from notfound_lyrics if exists
-                    logger.debug("Lyric saved successfully, checking if videoId: ${lyricDTO.videoId} exists in notfound_lyrics")
+                    logger.debug("Lyric saved successfully, checking if videoId: ${lyricRequestDTO.videoId} exists in notfound_lyrics")
                     
                     try {
-                        val deleteResult = notFoundLyricRepository.deleteByVideoId(lyricDTO.videoId).last()
+                        val deleteResult = notFoundLyricRepository.deleteByVideoId(lyricRequestDTO.videoId).last()
                         when (deleteResult) {
                             is Resource.Success -> {
                                 if (deleteResult.data) {
-                                    logger.info("Removed videoId: ${lyricDTO.videoId} from notfound_lyrics after adding lyrics")
+                                    logger.info("Removed videoId: ${lyricRequestDTO.videoId} from notfound_lyrics after adding lyrics")
                                 }
                             }
                             is Resource.Error -> {
-                                logger.warn("Failed to remove videoId: ${lyricDTO.videoId} from notfound_lyrics: ${deleteResult.message}")
+                                logger.warn("Failed to remove videoId: ${lyricRequestDTO.videoId} from notfound_lyrics: ${deleteResult.message}")
                             }
                             else -> {} // Loading state
                         }
                     } catch (e: Exception) {
-                        logger.warn("Exception while removing videoId: ${lyricDTO.videoId} from notfound_lyrics", e)
+                        logger.warn("Exception while removing videoId: ${lyricRequestDTO.videoId} from notfound_lyrics", e)
                     }
                     
-                    emit(Resource.Success(saveResult.data.toDTO()))
+                    emit(Resource.Success(saveResult.data.toResponseDTO()))
                 }
                 is Resource.Error -> {
                     emit(Resource.Error(saveResult.message, saveResult.exception))
@@ -213,33 +202,66 @@ class LyricService(
         } catch (e: Exception) {
             emit(Resource.Error("Error saving lyric", e))
         }
-    }.flowOn(kotlinx.coroutines.Dispatchers.IO)
+    }.flowOn(Dispatchers.IO)
 
+    /**
+     * Vote for a lyric (upvote or downvote)
+     * @param voteDTO The vote data transfer object containing the lyric ID and vote value
+     * @return A flow of Resource<LyricResponseDTO> representing the updated lyric
+     */
+    fun voteLyric(voteDTO: VoteDTO): Flow<Resource<LyricResponseDTO>> = flow {
+        emit(Resource.Loading)
+        logger.debug("voteLyric --> Processing vote for lyric id: ${voteDTO.id}")
+        
+        try {
+            // Convert vote value to increment: 1 for upvote, -1 for downvote
+            val voteIncrement = if (voteDTO.vote == 1) 1 else -1
+            logger.debug("voteLyric --> Vote increment: $voteIncrement")
+            
+            val result = lyricRepository.updateVote(voteDTO.id, voteIncrement).last()
+            
+            when (result) {
+                is Resource.Success -> {
+                    logger.debug("voteLyric --> Successfully updated vote for lyric id: ${voteDTO.id}")
+                    emit(Resource.Success(result.data.toResponseDTO()))
+                }
+                is Resource.Error -> {
+                    logger.error("voteLyric --> Failed to update vote for lyric id: ${voteDTO.id}: ${result.message}")
+                    emit(Resource.Error(result.message, result.exception, result.code))
+                }
+                else -> {} // Loading state
+            }
+        } catch (e: Exception) {
+            logger.error("voteLyric --> Error processing vote: ${e.message}", e)
+            emit(Resource.Error("Failed to process vote: ${e.message}", e))
+        }
+    }.flowOn(Dispatchers.IO)
+    
     // ========== TranslatedLyric Methods ==========
-    
-    fun getTranslatedLyricById(id: String): Flow<Resource<TranslatedLyricDTO?>> {
+
+    fun getTranslatedLyricById(id: String): Flow<Resource<TranslatedLyricResponseDTO?>> {
         return translatedLyricRepository.findById(id)
-            .mapSuccessNotNull { it.toDTO() }
+            .mapSuccessNotNull { it.toResponseDTO() }
             .catchToResourceError()
     }
-    
-    fun getTranslatedLyricsByVideoId(videoId: String): Flow<Resource<List<TranslatedLyricDTO>>> {
+
+    fun getTranslatedLyricsByVideoId(videoId: String): Flow<Resource<List<TranslatedLyricResponseDTO>>> {
         return translatedLyricRepository.findByVideoId(videoId)
-            .mapSuccess { translatedLyrics -> translatedLyrics.map { it.toDTO() } }
+            .mapSuccess { translatedLyrics -> translatedLyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
     }
     
-    fun getTranslatedLyricByVideoIdAndLanguage(videoId: String, language: String): Flow<Resource<TranslatedLyricDTO?>> {
+    fun getTranslatedLyricByVideoIdAndLanguage(videoId: String, language: String): Flow<Resource<TranslatedLyricResponseDTO?>> {
         return translatedLyricRepository.findByVideoIdAndLanguage(videoId, language)
-            .mapSuccessNotNull { it.toDTO() }
+            .mapSuccessNotNull { it.toResponseDTO() }
             .catchToResourceError()
     }
     
-    fun saveTranslatedLyric(translatedLyricDTO: TranslatedLyricDTO): Flow<Resource<TranslatedLyricDTO>> = flow {
+    fun saveTranslatedLyric(translatedLyricRequestDTO: TranslatedLyricRequestDTO): Flow<Resource<TranslatedLyricResponseDTO>> = flow {
         emit(Resource.Loading)
         
         try {
-            val translatedLyric = translatedLyricDTO.toEntity()
+            val translatedLyric = translatedLyricRequestDTO.toEntity()
             
             // Check for duplicate data based on sha256hash
             logger.debug("saveTranslatedLyric --> Checking for duplicate translated lyric with sha256hash: ${translatedLyric.sha256hash}")
@@ -265,7 +287,7 @@ class LyricService(
             
             when (saveResult) {
                 is Resource.Success -> {
-                    emit(Resource.Success(saveResult.data.toDTO()))
+                    emit(Resource.Success(saveResult.data.toResponseDTO()))
                 }
                 is Resource.Error -> {
                     emit(Resource.Error(saveResult.message, saveResult.exception))
@@ -275,167 +297,38 @@ class LyricService(
         } catch (e: Exception) {
             emit(Resource.Error("Error saving translated lyric", e))
         }
-    }.flowOn(kotlinx.coroutines.Dispatchers.IO)
+    }.flowOn(Dispatchers.IO)
 
-    // ========== NotFoundLyric Methods ==========
-    
-    fun getNotFoundLyricById(id: String): Flow<Resource<NotFoundLyricDTO?>> {
-        return notFoundLyricRepository.findById(id)
-            .mapSuccessNotNull { it.toDTO() }
-            .catchToResourceError()
-    }
-    
-    fun getNotFoundLyricByVideoId(videoId: String): Flow<Resource<NotFoundLyricDTO?>> {
-        return notFoundLyricRepository.findByVideoId(videoId)
-            .mapSuccessNotNull { it.toDTO() }
-            .catchToResourceError()
-    }
-    
-    fun getAllNotFoundLyrics(): Flow<Resource<List<NotFoundLyricDTO>>> {
-        return notFoundLyricRepository.findAll()
-            .mapSuccess { notFoundLyrics -> notFoundLyrics.map { it.toDTO() } }
-            .catchToResourceError()
-    }
-    
-    fun getAllNotFoundLyricsOrderedByDate(): Flow<Resource<List<NotFoundLyricDTO>>> {
-        return notFoundLyricRepository.findAllOrderedByDate()
-            .mapSuccess { notFoundLyrics -> notFoundLyrics.map { it.toDTO() } }
-            .catchToResourceError()
-    }
-    
-    fun saveNotFoundLyric(notFoundLyricDTO: NotFoundLyricDTO): Flow<Resource<NotFoundLyricDTO>> = flow {
+    /**
+     * Vote for a translated lyric (upvote or downvote)
+     * @param voteDTO The vote data transfer object containing the translated lyric ID and vote value
+     * @return A flow of Resource<TranslatedLyricResponseDTO> representing the updated translated lyric
+     */
+    fun voteTranslatedLyric(voteDTO: VoteDTO): Flow<Resource<TranslatedLyricResponseDTO>> = flow {
         emit(Resource.Loading)
+        logger.debug("voteTranslatedLyric --> Processing vote for translated lyric id: ${voteDTO.id}")
         
         try {
-            val notFoundLyric = notFoundLyricDTO.toEntity()
+            // Convert vote value to increment: 1 for upvote, -1 for downvote
+            val voteIncrement = if (voteDTO.vote == 1) 1 else -1
+            logger.debug("voteTranslatedLyric --> Vote increment: $voteIncrement")
             
-            // Check for duplicate data based on videoId
-            logger.debug("saveNotFoundLyric --> Checking for duplicate notfound lyric with videoId: ${notFoundLyric.videoId}")
-            val existingResult = notFoundLyricRepository.findByVideoId(notFoundLyric.videoId).last()
+            val result = translatedLyricRepository.updateVote(voteDTO.id, voteIncrement).last()
             
-            when (existingResult) {
+            when (result) {
                 is Resource.Success -> {
-                    if (existingResult.data != null) {
-                        // NotFound lyric with this videoId already exists
-                        logger.warn("saveNotFoundLyric --> Duplicate notfound lyric detected with videoId: ${notFoundLyric.videoId}")
-                        emit(Resource.duplicateError("VideoId already exists in notfound lyrics list"))
-                        return@flow
-                    }
+                    logger.debug("voteTranslatedLyric --> Successfully updated vote for translated lyric id: ${voteDTO.id}")
+                    emit(Resource.Success(result.data.toResponseDTO()))
                 }
                 is Resource.Error -> {
-                    logger.warn("saveNotFoundLyric --> Error checking for duplicate notfound lyric: ${existingResult.message}")
-                    // Continue to save if unable to check for duplicates
-                }
-                else -> {} // Loading state
-            }
-            
-            val saveResult = notFoundLyricRepository.save(notFoundLyric).last()
-            
-            when (saveResult) {
-                is Resource.Success -> {
-                    emit(Resource.Success(saveResult.data.toDTO()))
-                }
-                is Resource.Error -> {
-                    emit(Resource.Error(saveResult.message, saveResult.exception))
+                    logger.error("voteTranslatedLyric --> Failed to update vote for translated lyric id: ${voteDTO.id}: ${result.message}")
+                    emit(Resource.Error(result.message, result.exception, result.code))
                 }
                 else -> {} // Loading state
             }
         } catch (e: Exception) {
-            emit(Resource.Error("Error saving notfound lyric", e))
+            logger.error("voteTranslatedLyric --> Error processing vote: ${e.message}", e)
+            emit(Resource.Error("Failed to process vote: ${e.message}", e))
         }
-    }.flowOn(kotlinx.coroutines.Dispatchers.IO)
-    
-    fun deleteNotFoundLyric(id: String): Flow<Resource<Boolean>> {
-        return notFoundLyricRepository.delete(id)
-            .catchToResourceError()
-    }
-    
-    fun deleteNotFoundLyricByVideoId(videoId: String): Flow<Resource<Boolean>> {
-        return notFoundLyricRepository.deleteByVideoId(videoId)
-            .catchToResourceError()
-    }
-    
-    /**
-     * Internal method to check if a videoId exists in notfound_lyrics
-     * This can be useful for monitoring and debugging purposes
-     */
-    internal fun isVideoInNotFoundList(videoId: String): Flow<Resource<Boolean>> {
-        return notFoundLyricRepository.findByVideoId(videoId)
-            .mapSuccess { it != null }
-            .catchToResourceError()
-    }
-    
-    private fun Lyric.toDTO(): LyricDTO {
-        return LyricDTO(
-            videoId = videoId,
-            songTitle = songTitle,
-            artistName = artistName,
-            albumName = albumName,
-            durationSeconds = durationSeconds,
-            plainLyric = plainLyric,
-            syncedLyrics = syncedLyrics,
-            richSyncLyrics = richSyncLyrics,
-            vote = vote,
-            contributor = contributor,
-            contributorEmail = contributorEmail
-        )
-    }
-    
-    private fun LyricDTO.toEntity(): Lyric {
-        return Lyric(
-            id = ID.unique(),
-            videoId = videoId,
-            songTitle = songTitle,
-            artistName = artistName,
-            albumName = albumName,
-            durationSeconds = durationSeconds,
-            plainLyric = plainLyric,
-            syncedLyrics = syncedLyrics,
-            richSyncLyrics = richSyncLyrics,
-            vote = vote,
-            contributor = contributor,
-            contributorEmail = contributorEmail
-        )
-    }
-    
-    // ========== TranslatedLyric Conversion Methods ==========
-    
-    private fun TranslatedLyric.toDTO(): TranslatedLyricDTO {
-        return TranslatedLyricDTO(
-            videoId = videoId,
-            translatedLyric = translatedLyric,
-            language = language,
-            vote = vote,
-            contributor = contributor,
-            contributorEmail = contributorEmail
-        )
-    }
-    
-    private fun TranslatedLyricDTO.toEntity(): TranslatedLyric {
-        return TranslatedLyric(
-            id = this.getUniqueId(),
-            videoId = videoId,
-            translatedLyric = translatedLyric,
-            language = language,
-            vote = vote,
-            contributor = contributor,
-            contributorEmail = contributorEmail
-        )
-    }
-    
-    // ========== NotFoundLyric Conversion Methods ==========
-    
-    private fun NotFoundLyric.toDTO(): NotFoundLyricDTO {
-        return NotFoundLyricDTO(
-            videoId = videoId,
-            addedDate = addedDate
-        )
-    }
-    
-    private fun NotFoundLyricDTO.toEntity(): NotFoundLyric {
-        return NotFoundLyric(
-            videoId = videoId,
-            addedDate = addedDate
-        )
-    }
+    }.flowOn(Dispatchers.IO)
 }
