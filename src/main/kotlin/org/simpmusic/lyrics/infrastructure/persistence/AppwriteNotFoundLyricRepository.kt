@@ -86,16 +86,20 @@ class AppwriteNotFoundLyricRepository(
         logger.debug("findByVideoId completed for videoId: $videoId")
     }.flowOn(Dispatchers.IO)
 
-    override fun findAllOrderedByDate(): Flow<Resource<List<NotFoundLyric>>> = flow {
-        logger.debug("findAllOrderedByDate started for notfound lyrics")
+    override fun findAllOrderedByDate(limit: Int?, offset: Int?): Flow<Resource<List<NotFoundLyric>>> = flow {
+        logger.debug("findAllOrderedByDate started for notfound lyrics, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.orderDesc("addedDate"))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments for all notfound lyrics ordered by date")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.orderDesc("addedDate"))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->

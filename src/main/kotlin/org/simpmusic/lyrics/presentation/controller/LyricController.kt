@@ -40,13 +40,17 @@ class LyricController(
     private val logger = LoggerFactory.getLogger(LyricController::class.java)
 
     @GetMapping("/{videoId}")
-    suspend fun getLyricsByVideoId(@PathVariable videoId: String): ResponseEntity<List<LyricResponseDTO>> {
+    suspend fun getLyricsByVideoId(
+        @PathVariable videoId: String,
+        @RequestParam(required = false) limit: Int?,
+        @RequestParam(required = false) offset: Int?
+    ): ResponseEntity<List<LyricResponseDTO>> {
         return withContext(ioDispatcher) {
-            logger.debug("Getting lyrics for videoId: $videoId")
-            val result = lyricService.getLyricsByVideoId(videoId).last()
+            logger.debug("getLyricsByVideoId --> Getting lyrics for videoId: $videoId, limit: $limit, offset: $offset")
+            val result = lyricService.getLyricsByVideoId(videoId, limit, offset).last()
             when (result) {
                 is Resource.Success -> {
-                    logger.debug("Found ${result.data.size} lyrics for videoId: $videoId")
+                    logger.debug("getLyricsByVideoId --> Found ${result.data.size} lyrics for videoId: $videoId")
                     if (result.data.isNotEmpty()) {
                         ResponseEntity.ok(result.data)
                     } else {
@@ -54,7 +58,7 @@ class LyricController(
                     }
                 }
                 is Resource.Error -> {
-                    logger.error("Failed to get lyrics by videoId: ${result.message}", result.exception)
+                    logger.error("getLyricsByVideoId --> Failed to get lyrics by videoId: ${result.message}", result.exception)
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
                 }
                 is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
@@ -63,13 +67,18 @@ class LyricController(
     }
 
     @GetMapping("/search/title")
-    suspend fun getLyricsBySongTitle(@RequestParam title: String): ResponseEntity<List<LyricResponseDTO>> {
+    suspend fun getLyricsBySongTitle(
+        @RequestParam title: String,
+        @RequestParam(required = false) limit: Int?,
+        @RequestParam(required = false) offset: Int?
+    ): ResponseEntity<List<LyricResponseDTO>> {
         return withContext(ioDispatcher) {
-            val result = lyricService.getLyricsBySongTitle(title).last()
+            logger.debug("getLyricsBySongTitle --> Searching lyrics by title: $title, limit: $limit, offset: $offset")
+            val result = lyricService.getLyricsBySongTitle(title, limit, offset).last()
             when (result) {
                 is Resource.Success -> ResponseEntity.ok(result.data)
                 is Resource.Error -> {
-                    logger.error("Failed to get lyrics by title: ${result.message}", result.exception)
+                    logger.error("getLyricsBySongTitle --> Failed to get lyrics by title: ${result.message}", result.exception)
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
                 }
                 is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
@@ -78,13 +87,18 @@ class LyricController(
     }
 
     @GetMapping("/search/artist")
-    suspend fun getLyricsByArtist(@RequestParam artist: String): ResponseEntity<List<LyricResponseDTO>> {
+    suspend fun getLyricsByArtist(
+        @RequestParam artist: String,
+        @RequestParam(required = false) limit: Int?,
+        @RequestParam(required = false) offset: Int?
+    ): ResponseEntity<List<LyricResponseDTO>> {
         return withContext(ioDispatcher) {
-            val result = lyricService.getLyricsByArtist(artist).last()
+            logger.debug("getLyricsByArtist --> Searching lyrics by artist: $artist, limit: $limit, offset: $offset")
+            val result = lyricService.getLyricsByArtist(artist, limit, offset).last()
             when (result) {
                 is Resource.Success -> ResponseEntity.ok(result.data)
                 is Resource.Error -> {
-                    logger.error("Failed to get lyrics by artist: ${result.message}", result.exception)
+                    logger.error("getLyricsByArtist --> Failed to get lyrics by artist: ${result.message}", result.exception)
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
                 }
                 is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
@@ -93,17 +107,21 @@ class LyricController(
     }
 
     @GetMapping("/search")
-    suspend fun searchLyrics(@RequestParam q: String): ResponseEntity<List<LyricResponseDTO>> {
+    suspend fun searchLyrics(
+        @RequestParam q: String,
+        @RequestParam(required = false) limit: Int?,
+        @RequestParam(required = false) offset: Int?
+    ): ResponseEntity<List<LyricResponseDTO>> {
         return withContext(ioDispatcher) {
-            logger.debug("Searching lyrics with keywords: $q")
-            val result = lyricService.searchLyrics(q).last()
+            logger.debug("searchLyrics --> Searching lyrics with keywords: $q, limit: $limit, offset: $offset")
+            val result = lyricService.searchLyrics(q, limit, offset).last()
             when (result) {
                 is Resource.Success -> {
-                    logger.debug("Found ${result.data.size} lyrics for search: $q")
+                    logger.debug("searchLyrics --> Found ${result.data.size} lyrics for search: $q")
                     ResponseEntity.ok(result.data)
                 }
                 is Resource.Error -> {
-                    logger.error("Failed to search lyrics: ${result.message}", result.exception)
+                    logger.error("searchLyrics --> Failed to search lyrics: ${result.message}", result.exception)
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
                 }
                 is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()
@@ -134,17 +152,21 @@ class LyricController(
     // ========== TranslatedLyrics API Endpoints ==========
     
     @GetMapping("/translated/{videoId}")
-    suspend fun getTranslatedLyricsByVideoId(@PathVariable videoId: String): ResponseEntity<List<TranslatedLyricResponseDTO>> {
+    suspend fun getTranslatedLyricsByVideoId(
+        @PathVariable videoId: String,
+        @RequestParam(required = false) limit: Int?,
+        @RequestParam(required = false) offset: Int?
+    ): ResponseEntity<List<TranslatedLyricResponseDTO>> {
         return withContext(ioDispatcher) {
-            logger.debug("Getting translated lyrics for videoId: $videoId")
-            val result = lyricService.getTranslatedLyricsByVideoId(videoId).last()
+            logger.debug("getTranslatedLyricsByVideoId --> Getting translated lyrics for videoId: $videoId, limit: $limit, offset: $offset")
+            val result = lyricService.getTranslatedLyricsByVideoId(videoId, limit, offset).last()
             when (result) {
                 is Resource.Success -> {
-                    logger.debug("Found ${result.data.size} translated lyrics for videoId: $videoId")
+                    logger.debug("getTranslatedLyricsByVideoId --> Found ${result.data.size} translated lyrics for videoId: $videoId")
                     ResponseEntity.ok(result.data)
                 }
                 is Resource.Error -> {
-                    logger.error("Failed to get translated lyrics by videoId: ${result.message}", result.exception)
+                    logger.error("getTranslatedLyricsByVideoId --> Failed to get translated lyrics by videoId: ${result.message}", result.exception)
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
                 }
                 is Resource.Loading -> ResponseEntity.status(HttpStatus.PROCESSING).build()

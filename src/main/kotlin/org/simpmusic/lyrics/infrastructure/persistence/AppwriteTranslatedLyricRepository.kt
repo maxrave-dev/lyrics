@@ -58,16 +58,20 @@ class AppwriteTranslatedLyricRepository(
         logger.debug("findById completed for translated lyric id: $id")
     }.flowOn(Dispatchers.IO)
 
-    override fun findByVideoId(videoId: String): Flow<Resource<List<TranslatedLyric>>> = flow {
-        logger.debug("findByVideoId started for videoId: $videoId")
+    override fun findByVideoId(videoId: String, limit: Int?, offset: Int?): Flow<Resource<List<TranslatedLyric>>> = flow {
+        logger.debug("findByVideoId started for videoId: $videoId, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.equal("videoId", videoId))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with videoId query: $videoId")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.equal("videoId", videoId))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -110,16 +114,20 @@ class AppwriteTranslatedLyricRepository(
         logger.debug("findByVideoIdAndLanguage completed for videoId: $videoId, language: $language")
     }.flowOn(Dispatchers.IO)
 
-    override fun findByLanguage(language: String): Flow<Resource<List<TranslatedLyric>>> = flow {
-        logger.debug("findByLanguage started for language: $language")
+    override fun findByLanguage(language: String, limit: Int?, offset: Int?): Flow<Resource<List<TranslatedLyric>>> = flow {
+        logger.debug("findByLanguage started for language: $language, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.equal("language", language))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with language query: $language")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.equal("language", language))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->

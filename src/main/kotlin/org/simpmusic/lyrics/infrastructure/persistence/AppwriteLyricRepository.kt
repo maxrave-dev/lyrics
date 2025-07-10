@@ -59,16 +59,20 @@ class AppwriteLyricRepository(
         logger.debug("findById completed for id: $id")
     }.flowOn(Dispatchers.IO)
 
-    override fun findBySongTitle(title: String): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("findBySongTitle started for title: $title")
+    override fun findBySongTitle(title: String, limit: Int?, offset: Int?): Flow<Resource<List<Lyric>>> = flow {
+        logger.debug("findBySongTitle started for title: $title, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.contains("songTitle", title))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with title query: $title")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.contains("songTitle", title))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -84,16 +88,20 @@ class AppwriteLyricRepository(
         logger.debug("findBySongTitle completed for title: $title")
     }.flowOn(Dispatchers.IO)
 
-    override fun findByArtist(artist: String): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("findByArtist started for artist: $artist")
+    override fun findByArtist(artist: String, limit: Int?, offset: Int?): Flow<Resource<List<Lyric>>> = flow {
+        logger.debug("findByArtist started for artist: $artist, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.contains("artistName", artist))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with artist query: $artist")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.contains("artistName", artist))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -109,16 +117,20 @@ class AppwriteLyricRepository(
         logger.debug("findByArtist completed for artist: $artist")
     }.flowOn(Dispatchers.IO)
 
-    override fun findByVideoId(videoId: String): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("findByVideoId started for videoId: $videoId")
+    override fun findByVideoId(videoId: String, limit: Int?, offset: Int?): Flow<Resource<List<Lyric>>> = flow {
+        logger.debug("findByVideoId started for videoId: $videoId, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.equal("videoId", videoId))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with videoId query: $videoId")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.equal("videoId", videoId))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -134,21 +146,26 @@ class AppwriteLyricRepository(
         logger.debug("findByVideoId completed for videoId: $videoId")
     }.flowOn(Dispatchers.IO)
 
-    override fun search(keywords: String): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("search started for keywords: $keywords")
+    override fun search(keywords: String, limit: Int?, offset: Int?): Flow<Resource<List<Lyric>>> = flow {
+        logger.debug("search started for keywords: $keywords, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(
+            Query.or(listOf(
+                Query.search("songTitle", keywords),
+                Query.search("artistName", keywords)
+            ))
+        )
+        
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with full-text search query: $keywords")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(
-                    Query.or(listOf(
-                        Query.search("songTitle", keywords),
-                        Query.search("artistName", keywords)
-                    ))
-                )
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->

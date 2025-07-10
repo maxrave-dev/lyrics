@@ -11,6 +11,7 @@ import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
 import org.simpmusic.lyrics.application.dto.response.LyricResponseDTO
 import org.simpmusic.lyrics.application.dto.response.TranslatedLyricResponseDTO
+import org.simpmusic.lyrics.application.dto.response.NotFoundLyricResponseDTO
 import org.simpmusic.lyrics.domain.model.NotFoundLyric
 import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.domain.repository.LyricRepository
@@ -60,12 +61,12 @@ class LyricService(
             .catchToResourceError()
     }
     
-    fun getLyricsByVideoId(videoId: String): Flow<Resource<List<LyricResponseDTO>>> = flow {
+    fun getLyricsByVideoId(videoId: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<LyricResponseDTO>>> = flow {
         emit(Resource.Loading)
         
                 try {
             // First, try to find lyrics
-            val lyricsResult = lyricRepository.findByVideoId(videoId).last()
+            val lyricsResult = lyricRepository.findByVideoId(videoId, limit, offset).last()
             
             when (lyricsResult) {
                 is Resource.Success -> {
@@ -124,20 +125,20 @@ class LyricService(
         }
     }.flowOn(Dispatchers.IO)
     
-    fun getLyricsBySongTitle(title: String): Flow<Resource<List<LyricResponseDTO>>> {
-        return lyricRepository.findBySongTitle(title)
+    fun getLyricsBySongTitle(title: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<LyricResponseDTO>>> {
+        return lyricRepository.findBySongTitle(title, limit, offset)
             .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
     }
     
-    fun getLyricsByArtist(artist: String): Flow<Resource<List<LyricResponseDTO>>> {
-        return lyricRepository.findByArtist(artist)
+    fun getLyricsByArtist(artist: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<LyricResponseDTO>>> {
+        return lyricRepository.findByArtist(artist, limit, offset)
             .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
     }
     
-    fun searchLyrics(keywords: String): Flow<Resource<List<LyricResponseDTO>>> {
-        return lyricRepository.search(keywords)
+    fun searchLyrics(keywords: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<LyricResponseDTO>>> {
+        return lyricRepository.search(keywords, limit, offset)
             .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
     }
@@ -245,8 +246,14 @@ class LyricService(
             .catchToResourceError()
     }
 
-    fun getTranslatedLyricsByVideoId(videoId: String): Flow<Resource<List<TranslatedLyricResponseDTO>>> {
-        return translatedLyricRepository.findByVideoId(videoId)
+    fun getTranslatedLyricsByVideoId(videoId: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<TranslatedLyricResponseDTO>>> {
+        return translatedLyricRepository.findByVideoId(videoId, limit, offset)
+            .mapSuccess { translatedLyrics -> translatedLyrics.map { it.toResponseDTO() } }
+            .catchToResourceError()
+    }
+
+    fun getTranslatedLyricsByLanguage(language: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<TranslatedLyricResponseDTO>>> {
+        return translatedLyricRepository.findByLanguage(language, limit, offset)
             .mapSuccess { translatedLyrics -> translatedLyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
     }
@@ -331,4 +338,10 @@ class LyricService(
             emit(Resource.Error("Failed to process vote: ${e.message}", e))
         }
     }.flowOn(Dispatchers.IO)
+
+    fun getAllNotFoundLyrics(limit: Int? = null, offset: Int? = null): Flow<Resource<List<NotFoundLyricResponseDTO>>> {
+        return notFoundLyricRepository.findAllOrderedByDate(limit, offset)
+            .mapSuccess { notFoundLyrics -> notFoundLyrics.map { it.toResponseDTO() } }
+            .catchToResourceError()
+    }
 }

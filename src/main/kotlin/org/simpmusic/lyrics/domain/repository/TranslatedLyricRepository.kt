@@ -11,9 +11,9 @@ import org.simpmusic.lyrics.domain.model.Resource
  */
 interface TranslatedLyricRepository {
     fun findById(id: String): Flow<Resource<TranslatedLyric?>>
-    fun findByVideoId(videoId: String): Flow<Resource<List<TranslatedLyric>>>
+    fun findByVideoId(videoId: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<TranslatedLyric>>>
     fun findByVideoIdAndLanguage(videoId: String, language: String): Flow<Resource<TranslatedLyric?>>
-    fun findByLanguage(language: String): Flow<Resource<List<TranslatedLyric>>>
+    fun findByLanguage(language: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<TranslatedLyric>>>
     fun findBySha256Hash(sha256hash: String): Flow<Resource<TranslatedLyric?>>
     fun save(translatedLyric: TranslatedLyric): Flow<Resource<TranslatedLyric>>
     fun updateVote(id: String, voteIncrement: Int): Flow<Resource<TranslatedLyric>>
