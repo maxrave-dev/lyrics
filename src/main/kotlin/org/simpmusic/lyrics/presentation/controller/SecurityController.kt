@@ -12,7 +12,7 @@ import java.time.Instant
  * Controller for security-related operations
  * ONLY for development purposes
  */
-///*
+/*
 @RestController
 @RequestMapping("/api/security")
 class SecurityController(private val hmacService: HmacService) {
@@ -34,4 +34,4 @@ class SecurityController(private val hmacService: HmacService) {
         )
     }
 }
-// */
+ */
