@@ -2,7 +2,7 @@ package org.simpmusic.lyrics.infrastructure.config
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.simpmusic.lyrics.application.dto.ErrorResponseDTO
+import org.simpmusic.lyrics.application.dto.response.ErrorResponseDTO
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus

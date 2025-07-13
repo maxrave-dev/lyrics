@@ -12,14 +12,11 @@ import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
-import org.simpmusic.lyrics.application.dto.LyricDTO
-import org.simpmusic.lyrics.application.dto.TranslatedLyricDTO
-import org.simpmusic.lyrics.application.dto.NotFoundLyricDTO
-import org.simpmusic.lyrics.application.dto.ErrorResponseDTO
-import org.simpmusic.lyrics.application.dto.VoteDTO
+import org.simpmusic.lyrics.application.dto.response.ErrorResponseDTO
 import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.NotFoundLyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.VoteRequestDTO
 import org.simpmusic.lyrics.application.dto.response.LyricResponseDTO
 import org.simpmusic.lyrics.application.dto.response.NotFoundLyricResponseDTO
 import org.simpmusic.lyrics.application.dto.response.TranslatedLyricResponseDTO
@@ -221,7 +218,7 @@ class LyricController(
     // ========== Vote API Endpoints ==========
     
     @PostMapping("/vote")
-    suspend fun voteLyric(@RequestBody voteDTO: VoteDTO): ResponseEntity<Any> {
+    suspend fun voteLyric(@RequestBody voteDTO: VoteRequestDTO): ResponseEntity<Any> {
         return withContext(ioDispatcher) {
             logger.debug("voteLyric --> Processing vote request for lyric id: ${voteDTO.id}")
             val result = lyricService.voteLyric(voteDTO).last()
@@ -242,7 +239,7 @@ class LyricController(
     }
     
     @PostMapping("/translated/vote")
-    suspend fun voteTranslatedLyric(@RequestBody voteDTO: VoteDTO): ResponseEntity<Any> {
+    suspend fun voteTranslatedLyric(@RequestBody voteDTO: VoteRequestDTO): ResponseEntity<Any> {
         return withContext(ioDispatcher) {
             logger.debug("voteTranslatedLyric --> Processing vote request for translated lyric id: ${voteDTO.id}")
             val result = lyricService.voteTranslatedLyric(voteDTO).last()

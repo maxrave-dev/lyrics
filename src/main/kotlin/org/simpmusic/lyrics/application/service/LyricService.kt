@@ -6,9 +6,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.last
-import org.simpmusic.lyrics.application.dto.VoteDTO
 import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.VoteRequestDTO
 import org.simpmusic.lyrics.application.dto.response.LyricResponseDTO
 import org.simpmusic.lyrics.application.dto.response.TranslatedLyricResponseDTO
 import org.simpmusic.lyrics.application.dto.response.NotFoundLyricResponseDTO
@@ -210,7 +210,7 @@ class LyricService(
      * @param voteDTO The vote data transfer object containing the lyric ID and vote value
      * @return A flow of Resource<LyricResponseDTO> representing the updated lyric
      */
-    fun voteLyric(voteDTO: VoteDTO): Flow<Resource<LyricResponseDTO>> = flow {
+    fun voteLyric(voteDTO: VoteRequestDTO): Flow<Resource<LyricResponseDTO>> = flow {
         emit(Resource.Loading)
         logger.debug("voteLyric --> Processing vote for lyric id: ${voteDTO.id}")
         
@@ -311,7 +311,7 @@ class LyricService(
      * @param voteDTO The vote data transfer object containing the translated lyric ID and vote value
      * @return A flow of Resource<TranslatedLyricResponseDTO> representing the updated translated lyric
      */
-    fun voteTranslatedLyric(voteDTO: VoteDTO): Flow<Resource<TranslatedLyricResponseDTO>> = flow {
+    fun voteTranslatedLyric(voteDTO: VoteRequestDTO): Flow<Resource<TranslatedLyricResponseDTO>> = flow {
         emit(Resource.Loading)
         logger.debug("voteTranslatedLyric --> Processing vote for translated lyric id: ${voteDTO.id}")
         
