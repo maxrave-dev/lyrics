@@ -60,7 +60,7 @@ fun TranslatedLyric.toResponseDTO(): TranslatedLyricResponseDTO {
 
 fun TranslatedLyricRequestDTO.toEntity(): TranslatedLyric {
     return TranslatedLyric(
-        id = this.getUniqueId(),
+        id = ID.unique(),
         videoId = videoId,
         translatedLyric = translatedLyric,
         language = language,

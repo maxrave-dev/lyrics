@@ -183,11 +183,11 @@ class AppwriteTranslatedLyricRepository(
         )
         
         runCatching {
-            logger.debug("Calling databases.createDocument for translated lyric")
+            logger.debug("Calling databases.createDocument for translated lyric with id: ${translatedLyric.id}")
             databases.createDocument(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                documentId = ID.unique(),
+                documentId = translatedLyric.id,
                 data = data
             )
         }.fold(
