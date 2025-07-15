@@ -75,36 +75,31 @@ class LyricService(
                         logger.debug("No lyrics found for videoId: $videoId, checking notfound_lyrics...")
                         
                         val notFoundResult = notFoundLyricRepository.findByVideoId(videoId).last()
-                        
-                        when (notFoundResult) {
-                            is Resource.Success -> {
-                                if (notFoundResult.data == null) {
-                                    // Not in notfound_lyrics yet, save it
-                                    logger.info("Adding videoId: $videoId to notfound_lyrics")
-                                    val notFoundLyric = NotFoundLyric(
-                                        videoId = videoId,
-                                        addedDate = LocalDateTime.now()
-                                    )
-                                    
-                                    // Save to notfound_lyrics
-                                    val saveResult = notFoundLyricRepository.save(notFoundLyric).last()
-                                    when (saveResult) {
-                                        is Resource.Success -> {
-                                            logger.info("Successfully saved NotFoundLyric for videoId: $videoId")
-                                        }
-                                        is Resource.Error -> {
-                                            logger.warn("Failed to save NotFoundLyric for videoId: $videoId - ${saveResult.message}")
-                                        }
-                                        else -> {} // Loading state
+                       when (notFoundResult) {
+                            is Resource.Success if (notFoundResult.data != null) -> {
+                                logger.debug("VideoId: $videoId already exists in notfound_lyrics")
+                            }
+                            is Resource.Loading -> {
+                            }
+                            else -> {
+                                logger.info("Adding videoId: $videoId to notfound_lyrics")
+                                val notFoundLyric = NotFoundLyric(
+                                    videoId = videoId,
+                                    addedDate = LocalDateTime.now()
+                                )
+
+                                // Save to notfound_lyrics
+                                val saveResult = notFoundLyricRepository.save(notFoundLyric).last()
+                                when (saveResult) {
+                                    is Resource.Success -> {
+                                        logger.info("Successfully saved NotFoundLyric for videoId: $videoId")
                                     }
-                                } else {
-                                    logger.debug("VideoId: $videoId already exists in notfound_lyrics")
+                                    is Resource.Error -> {
+                                        logger.warn("Failed to save NotFoundLyric for videoId: $videoId - ${saveResult.message}")
+                                    }
+                                    else -> {} // Loading state
                                 }
-                            }
-                            is Resource.Error -> {
-                                logger.warn("Error checking notfound_lyrics for videoId: $videoId - ${notFoundResult.message}")
-                            }
-                            else -> {} // Loading state
+                            } // Loading state
                         }
                         
                         // Return empty list regardless of notfound_lyrics operation result
