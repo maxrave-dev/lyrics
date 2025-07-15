@@ -1,6 +1,6 @@
 package org.simpmusic.lyrics.domain.model
 
-import org.simpmusic.lyrics.application.dto.ErrorResponseDTO
+import org.simpmusic.lyrics.application.dto.response.ErrorResponseDTO
 
 /**
  * Resource class for handling data states (Success, Error, Loading)

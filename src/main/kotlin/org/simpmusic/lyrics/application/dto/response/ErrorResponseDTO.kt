@@ -1,8 +1,8 @@
-package org.simpmusic.lyrics.application.dto
+package org.simpmusic.lyrics.application.dto.response
 
 /**
  * Standard error response format for API
- * 
+ *
  * Example response format:
  * ```json
  * {
@@ -11,7 +11,7 @@ package org.simpmusic.lyrics.application.dto
  *   "reason": "This lyrics already exists"
  * }
  * ```
- * 
+ *
  * Common usage scenarios:
  * - 409 (CONFLICT): When trying to create duplicate data
  * - 400 (BAD_REQUEST): Invalid input or parameters
@@ -31,7 +31,7 @@ data class ErrorResponseDTO(
         const val NOT_FOUND = 404 // Resource not found
         const val INTERNAL_SERVER_ERROR = 500 // Server error
         const val UNPROCESSABLE_ENTITY = 422 // Validation error
-        
+
         /**
          * Create error response for duplicate data
          * Usage: ErrorResponseDTO.duplicateData("This lyrics already exists")
@@ -41,7 +41,7 @@ data class ErrorResponseDTO(
             code = CONFLICT,
             reason = reason
         )
-        
+
         /**
          * Create error response for bad request
          * Usage: ErrorResponseDTO.badRequest("Invalid videoId format")
@@ -51,7 +51,7 @@ data class ErrorResponseDTO(
             code = BAD_REQUEST,
             reason = reason
         )
-        
+
         /**
          * Create error response for not found
          * Usage: ErrorResponseDTO.notFound("Lyrics not found")
@@ -61,7 +61,7 @@ data class ErrorResponseDTO(
             code = NOT_FOUND,
             reason = reason
         )
-        
+
         /**
          * Create error response for server error
          * Usage: ErrorResponseDTO.serverError("Database connection failed")
@@ -71,7 +71,7 @@ data class ErrorResponseDTO(
             code = INTERNAL_SERVER_ERROR,
             reason = reason
         )
-        
+
         /**
          * Create error response for validation error
          * Usage: ErrorResponseDTO.validationError("Required field missing: songTitle")
@@ -82,4 +82,4 @@ data class ErrorResponseDTO(
             reason = reason
         )
     }
-} 
+}

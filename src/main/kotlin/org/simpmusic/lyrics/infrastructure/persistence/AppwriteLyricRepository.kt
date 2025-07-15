@@ -59,40 +59,20 @@ class AppwriteLyricRepository(
         logger.debug("findById completed for id: $id")
     }.flowOn(Dispatchers.IO)
 
-    override fun findAll(): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("findAll started")
+    override fun findBySongTitle(title: String, limit: Int?, offset: Int?): Flow<Resource<List<Lyric>>> = flow {
+        logger.debug("findBySongTitle started for title: $title, limit: $limit, offset: $offset")
         emit(Resource.Loading)
         
-        runCatching {
-            logger.debug("Calling databases.listDocuments")
-            databases.listDocuments(
-                databaseId = databaseId,
-                collectionId = collectionId
-            )
-        }.fold(
-            onSuccess = { documents ->
-                logger.debug("Successfully found ${documents.documents.size} documents")
-                emit(Resource.Success(documents.documents.map { documentToLyric(it) }))
-            },
-            onFailure = { e ->
-                e.printStackTrace()
-                logger.error("Error finding all lyrics", e)
-                emit(Resource.Error("Failed to find lyrics: ${e.message}", e as? Exception))
-            }
-        )
-        logger.debug("findAll completed")
-    }.flowOn(Dispatchers.IO)
-
-    override fun findBySongTitle(title: String): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("findBySongTitle started for title: $title")
-        emit(Resource.Loading)
+        val queries = mutableListOf(Query.contains("songTitle", title))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with title query: $title")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.contains("songTitle", title))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -108,16 +88,20 @@ class AppwriteLyricRepository(
         logger.debug("findBySongTitle completed for title: $title")
     }.flowOn(Dispatchers.IO)
 
-    override fun findByArtist(artist: String): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("findByArtist started for artist: $artist")
+    override fun findByArtist(artist: String, limit: Int?, offset: Int?): Flow<Resource<List<Lyric>>> = flow {
+        logger.debug("findByArtist started for artist: $artist, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.contains("artistName", artist))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with artist query: $artist")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.contains("artistName", artist))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -133,16 +117,20 @@ class AppwriteLyricRepository(
         logger.debug("findByArtist completed for artist: $artist")
     }.flowOn(Dispatchers.IO)
 
-    override fun findByVideoId(videoId: String): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("findByVideoId started for videoId: $videoId")
+    override fun findByVideoId(videoId: String, limit: Int?, offset: Int?): Flow<Resource<List<Lyric>>> = flow {
+        logger.debug("findByVideoId started for videoId: $videoId, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.equal("videoId", videoId))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with videoId query: $videoId")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.equal("videoId", videoId))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -158,21 +146,26 @@ class AppwriteLyricRepository(
         logger.debug("findByVideoId completed for videoId: $videoId")
     }.flowOn(Dispatchers.IO)
 
-    override fun search(keywords: String): Flow<Resource<List<Lyric>>> = flow {
-        logger.debug("search started for keywords: $keywords")
+    override fun search(keywords: String, limit: Int?, offset: Int?): Flow<Resource<List<Lyric>>> = flow {
+        logger.debug("search started for keywords: $keywords, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(
+            Query.or(listOf(
+                Query.search("songTitle", keywords),
+                Query.search("artistName", keywords)
+            ))
+        )
+        
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with full-text search query: $keywords")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(
-                    Query.or(listOf(
-                        Query.search("songTitle", keywords),
-                        Query.search("artistName", keywords)
-                    ))
-                )
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -233,18 +226,18 @@ class AppwriteLyricRepository(
             "contributorEmail" to lyric.contributorEmail,
             "sha256hash" to lyric.sha256hash
         )
-        logger.debug("Prepared data for save: ${data.keys}")
+        logger.debug("Prepared data for save: {}", data.keys)
         
         runCatching {
             logger.debug("Checking if document exists for id: ${lyric.id}")
             
             // Try to get existing document first - simple approach
-            var documentExists = false
+            var documentExists: Boolean
             try {
                 databases.getDocument(
                     databaseId = databaseId,
                     collectionId = collectionId,
-                    documentId = lyric.id.toString()
+                    documentId = lyric.id
                 )
                 documentExists = true
                 logger.debug("Document exists for id: ${lyric.id}, will update")
@@ -263,7 +256,7 @@ class AppwriteLyricRepository(
                 databases.updateDocument(
                     databaseId = databaseId,
                     collectionId = collectionId,
-                    documentId = lyric.id.toString(),
+                    documentId = lyric.id,
                     data = data
                 )
             } else {
@@ -271,7 +264,7 @@ class AppwriteLyricRepository(
                 databases.createDocument(
                     databaseId = databaseId,
                     collectionId = collectionId,
-                    documentId = lyric.id.toString(),
+                    documentId = lyric.id,
                     data = data
                 )
             }
@@ -288,11 +281,55 @@ class AppwriteLyricRepository(
         )
         logger.debug("save completed for lyric id: ${lyric.id}")
     }.flowOn(Dispatchers.IO)
+
+    override fun updateVote(id: String, voteIncrement: Int): Flow<Resource<Lyric>> = flow {
+        logger.debug("updateVote --> Started for id: $id with increment: $voteIncrement")
+        emit(Resource.Loading)
+        
+        runCatching {
+            // First get the lyric to update its vote count
+            logger.debug("updateVote --> Getting current lyric for id: $id")
+            val document = databases.getDocument(
+                databaseId = databaseId,
+                collectionId = collectionId,
+                documentId = id
+            )
+            
+            val lyric = documentToLyric(document)
+            val newVoteCount = lyric.vote + voteIncrement
+            
+            logger.debug("updateVote --> Updating vote count from ${lyric.vote} to $newVoteCount for id: $id")
+            
+            // Update only the vote field
+            val updatedDocument = databases.updateDocument(
+                databaseId = databaseId,
+                collectionId = collectionId,
+                documentId = id,
+                data = mapOf("vote" to newVoteCount)
+            )
+            
+            val updatedLyric = documentToLyric(updatedDocument)
+            emit(Resource.Success(updatedLyric))
+        }.fold(
+            onSuccess = { lyric ->
+                logger.debug("updateVote --> Successfully updated vote for id: $id")
+            },
+            onFailure = { e ->
+                logger.error("updateVote --> Error updating vote for id: $id", e)
+                if (e is AppwriteException && e.code == 404) {
+                    emit(Resource.notFoundError("Lyric not found with id: $id"))
+                } else {
+                    emit(Resource.Error("Failed to update vote: ${e.message}", e as? Exception))
+                }
+            }
+        )
+        logger.debug("updateVote --> Completed for id: $id")
+    }.flowOn(Dispatchers.IO)
     
     private fun documentToLyric(document: Document<Map<String, Any>>): Lyric {
         logger.debug("Converting document to Lyric: ${document.id}")
-        logger.debug("Document data keys: ${document.data.keys}")
-        logger.debug("Document data: $document.data")
+        logger.debug("Document data keys: {}", document.data.keys)
+        logger.debug("Document data: {}.data", document)
         
         runCatching {
             val videoId = document.data["videoId"].toString()

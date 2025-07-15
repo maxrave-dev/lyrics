@@ -11,11 +11,11 @@ import org.simpmusic.lyrics.domain.model.Resource
  */
 interface LyricRepository {
     fun findById(id: String): Flow<Resource<Lyric?>>
-    fun findByVideoId(videoId: String): Flow<Resource<List<Lyric>>>
-    fun findAll(): Flow<Resource<List<Lyric>>>
-    fun findBySongTitle(title: String): Flow<Resource<List<Lyric>>>
-    fun findByArtist(artist: String): Flow<Resource<List<Lyric>>>
-    fun search(keywords: String): Flow<Resource<List<Lyric>>>
+    fun findByVideoId(videoId: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<Lyric>>>
+    fun findBySongTitle(title: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<Lyric>>>
+    fun findByArtist(artist: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<Lyric>>>
+    fun search(keywords: String, limit: Int? = null, offset: Int? = null): Flow<Resource<List<Lyric>>>
     fun findBySha256Hash(sha256hash: String): Flow<Resource<Lyric?>>
     fun save(lyric: Lyric): Flow<Resource<Lyric>>
+    fun updateVote(id: String, voteIncrement: Int): Flow<Resource<Lyric>>
 }

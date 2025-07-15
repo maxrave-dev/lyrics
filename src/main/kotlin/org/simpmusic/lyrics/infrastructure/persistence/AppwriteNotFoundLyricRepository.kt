@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 
@@ -87,39 +86,20 @@ class AppwriteNotFoundLyricRepository(
         logger.debug("findByVideoId completed for videoId: $videoId")
     }.flowOn(Dispatchers.IO)
 
-    override fun findAll(): Flow<Resource<List<NotFoundLyric>>> = flow {
-        logger.debug("findAll started for notfound lyrics")
+    override fun findAllOrderedByDate(limit: Int?, offset: Int?): Flow<Resource<List<NotFoundLyric>>> = flow {
+        logger.debug("findAllOrderedByDate started for notfound lyrics, limit: $limit, offset: $offset")
         emit(Resource.Loading)
         
-        runCatching {
-            logger.debug("Calling databases.listDocuments for all notfound lyrics")
-            databases.listDocuments(
-                databaseId = databaseId,
-                collectionId = collectionId
-            )
-        }.fold(
-            onSuccess = { documents ->
-                logger.debug("Successfully found ${documents.documents.size} notfound lyrics")
-                emit(Resource.Success(documents.documents.map { documentToNotFoundLyric(it) }))
-            },
-            onFailure = { e ->
-                logger.error("Error finding all notfound lyrics", e)
-                emit(Resource.Error("Failed to find notfound lyrics: ${e.message}", e as? Exception))
-            }
-        )
-        logger.debug("findAll completed for notfound lyrics")
-    }.flowOn(Dispatchers.IO)
-
-    override fun findAllOrderedByDate(): Flow<Resource<List<NotFoundLyric>>> = flow {
-        logger.debug("findAllOrderedByDate started for notfound lyrics")
-        emit(Resource.Loading)
+        val queries = mutableListOf(Query.orderDesc("addedDate"))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments for all notfound lyrics ordered by date")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.orderDesc("addedDate"))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -162,34 +142,6 @@ class AppwriteNotFoundLyricRepository(
             }
         )
         logger.debug("save completed for notfound lyric id: ${notFoundLyric.videoId}")
-    }.flowOn(Dispatchers.IO)
-
-    override fun delete(id: String): Flow<Resource<Boolean>> = flow {
-        logger.debug("delete started for notfound lyric id: $id")
-        emit(Resource.Loading)
-        
-        runCatching {
-            logger.debug("Calling databases.deleteDocument for notfound lyric id: $id")
-            databases.deleteDocument(
-                databaseId = databaseId,
-                collectionId = collectionId,
-                documentId = id
-            )
-        }.fold(
-            onSuccess = {
-                logger.debug("Successfully deleted notfound lyric with id: $id")
-                emit(Resource.Success(true))
-            },
-            onFailure = { e ->
-                logger.error("Error deleting notfound lyric with id: $id", e)
-                if (e is AppwriteException && e.code == 404) {
-                    emit(Resource.Success(false))
-                } else {
-                    emit(Resource.Error("Failed to delete notfound lyric: ${e.message}", e as? Exception))
-                }
-            }
-        )
-        logger.debug("delete completed for notfound lyric id: $id")
     }.flowOn(Dispatchers.IO)
 
     override fun deleteByVideoId(videoId: String): Flow<Resource<Boolean>> = flow {

@@ -12,9 +12,7 @@ import org.simpmusic.lyrics.domain.model.Resource
 interface NotFoundLyricRepository {
     fun findById(id: String): Flow<Resource<NotFoundLyric?>>
     fun findByVideoId(videoId: String): Flow<Resource<NotFoundLyric?>>
-    fun findAll(): Flow<Resource<List<NotFoundLyric>>>
-    fun findAllOrderedByDate(): Flow<Resource<List<NotFoundLyric>>>
+    fun findAllOrderedByDate(limit: Int? = null, offset: Int? = null): Flow<Resource<List<NotFoundLyric>>>
     fun save(notFoundLyric: NotFoundLyric): Flow<Resource<NotFoundLyric>>
-    fun delete(id: String): Flow<Resource<Boolean>>
     fun deleteByVideoId(videoId: String): Flow<Resource<Boolean>>
 } 

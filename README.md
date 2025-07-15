@@ -77,15 +77,20 @@ http://localhost:8080/swagger-ui/index.html
 #### Lyrics Management
 ```http
 GET    /api/lyrics/{videoId}           # Get lyrics by video ID
+GET    /api/lyrics/{videoId}?limit=10&offset=0 # Get paginated lyrics by video ID
 GET    /api/lyrics/search/title?title= # Search by song title
+GET    /api/lyrics/search/title?title=&limit=10&offset=0 # Paginated search by song title 
 GET    /api/lyrics/search/artist?artist= # Search by artist
+GET    /api/lyrics/search/artist?artist=&limit=10&offset=0 # Paginated search by artist
 GET    /api/lyrics/search?q=           # Full-text search
+GET    /api/lyrics/search?q=&limit=10&offset=0 # Paginated full-text search
 POST   /api/lyrics                     # Create new lyrics
 ```
 
 #### Translated Lyrics
 ```http
 GET    /api/lyrics/translated/{videoId}    # Get translations
+GET    /api/lyrics/translated/{videoId}?limit=10&offset=0 # Get paginated translations
 GET    /api/lyrics/translated/{videoId}/{language} # Get specific translation
 POST   /api/lyrics/translated              # Create translation
 ```
@@ -107,6 +112,7 @@ All non-GET requests (POST, PUT, DELETE, PATCH) require HMAC authentication:
 4. Add headers to your request:
    - `X-Timestamp`: Your timestamp
    - `X-HMAC`: Your generated HMAC token
+5. Your HMAC token is available in 5 minutes
 
 Example using curl:
 ```bash
@@ -122,12 +128,11 @@ curl -X POST "http://localhost:8080/api/lyrics" \
   -d '{"videoId":"dQw4w9WgXcQ", ...}'
 ```
 
-This returns a valid HMAC and timestamp for immediate use (valid for 5 minutes).
-
 ## Roadmap
 - [x] Basic CRUD operations for lyrics
 - [x] Security for non-GET requests
 - [x] Rate limiting
+- [x] Paginated search
 - [ ] Input data
 - [ ] Public server
 - [ ] Frontend integration

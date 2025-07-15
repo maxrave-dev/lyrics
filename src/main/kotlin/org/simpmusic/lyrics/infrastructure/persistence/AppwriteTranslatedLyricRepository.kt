@@ -3,7 +3,6 @@ package org.simpmusic.lyrics.infrastructure.persistence
 import io.appwrite.ID
 import io.appwrite.Query
 import io.appwrite.exceptions.AppwriteException
-import io.appwrite.models.Document
 import io.appwrite.services.Databases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -12,7 +11,7 @@ import kotlinx.coroutines.flow.flowOn
 import org.simpmusic.lyrics.domain.model.TranslatedLyric
 import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
-import org.simpmusic.lyrics.extensions.sha256
+import org.simpmusic.lyrics.extensions.documentToTranslatedLyric
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Repository
@@ -59,16 +58,20 @@ class AppwriteTranslatedLyricRepository(
         logger.debug("findById completed for translated lyric id: $id")
     }.flowOn(Dispatchers.IO)
 
-    override fun findByVideoId(videoId: String): Flow<Resource<List<TranslatedLyric>>> = flow {
-        logger.debug("findByVideoId started for videoId: $videoId")
+    override fun findByVideoId(videoId: String, limit: Int?, offset: Int?): Flow<Resource<List<TranslatedLyric>>> = flow {
+        logger.debug("findByVideoId started for videoId: $videoId, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.equal("videoId", videoId))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with videoId query: $videoId")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.equal("videoId", videoId))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -111,16 +114,20 @@ class AppwriteTranslatedLyricRepository(
         logger.debug("findByVideoIdAndLanguage completed for videoId: $videoId, language: $language")
     }.flowOn(Dispatchers.IO)
 
-    override fun findByLanguage(language: String): Flow<Resource<List<TranslatedLyric>>> = flow {
-        logger.debug("findByLanguage started for language: $language")
+    override fun findByLanguage(language: String, limit: Int?, offset: Int?): Flow<Resource<List<TranslatedLyric>>> = flow {
+        logger.debug("findByLanguage started for language: $language, limit: $limit, offset: $offset")
         emit(Resource.Loading)
+        
+        val queries = mutableListOf(Query.equal("language", language))
+        limit?.let { queries.add(Query.limit(it)) }
+        offset?.let { queries.add(Query.offset(it)) }
         
         runCatching {
             logger.debug("Calling databases.listDocuments with language query: $language")
             databases.listDocuments(
                 databaseId = databaseId,
                 collectionId = collectionId,
-                queries = listOf(Query.equal("language", language))
+                queries = queries
             )
         }.fold(
             onSuccess = { documents ->
@@ -133,29 +140,6 @@ class AppwriteTranslatedLyricRepository(
             }
         )
         logger.debug("findByLanguage completed for language: $language")
-    }.flowOn(Dispatchers.IO)
-
-    override fun findAll(): Flow<Resource<List<TranslatedLyric>>> = flow {
-        logger.debug("findAll started for translated lyrics")
-        emit(Resource.Loading)
-        
-        runCatching {
-            logger.debug("Calling databases.listDocuments for all translated lyrics")
-            databases.listDocuments(
-                databaseId = databaseId,
-                collectionId = collectionId
-            )
-        }.fold(
-            onSuccess = { documents ->
-                logger.debug("Successfully found ${documents.documents.size} translated lyrics")
-                emit(Resource.Success(documents.documents.map { documentToTranslatedLyric(it) }))
-            },
-            onFailure = { e ->
-                logger.error("Error finding all translated lyrics", e)
-                emit(Resource.Error("Failed to find translated lyrics: ${e.message}", e as? Exception))
-            }
-        )
-        logger.debug("findAll completed for translated lyrics")
     }.flowOn(Dispatchers.IO)
 
     override fun findBySha256Hash(sha256hash: String): Flow<Resource<TranslatedLyric?>> = flow {
@@ -188,7 +172,7 @@ class AppwriteTranslatedLyricRepository(
         emit(Resource.Loading)
         
         val data = mapOf(
-            "id" to translatedLyric.id.toString(),
+            "id" to translatedLyric.id,
             "videoId" to translatedLyric.videoId,
             "translatedLyric" to translatedLyric.translatedLyric,
             "language" to translatedLyric.language,
@@ -219,49 +203,47 @@ class AppwriteTranslatedLyricRepository(
         logger.debug("save completed for translated lyric id: ${translatedLyric.id}")
     }.flowOn(Dispatchers.IO)
 
-    override fun delete(id: String): Flow<Resource<Boolean>> = flow {
-        logger.debug("delete started for translated lyric id: $id")
+    override fun updateVote(id: String, voteIncrement: Int): Flow<Resource<TranslatedLyric>> = flow {
+        logger.debug("updateVote --> Started for translated lyric id: $id with increment: $voteIncrement")
         emit(Resource.Loading)
         
         runCatching {
-            logger.debug("Calling databases.deleteDocument for translated lyric id: $id")
-            databases.deleteDocument(
+            // First get the translated lyric to update its vote count
+            logger.debug("updateVote --> Getting current translated lyric for id: $id")
+            val document = databases.getDocument(
                 databaseId = databaseId,
                 collectionId = collectionId,
                 documentId = id
             )
+            
+            val translatedLyric = documentToTranslatedLyric(document)
+            val newVoteCount = translatedLyric.vote + voteIncrement
+            
+            logger.debug("updateVote --> Updating vote count from ${translatedLyric.vote} to $newVoteCount for id: $id")
+            
+            // Update only the vote field
+            val updatedDocument = databases.updateDocument(
+                databaseId = databaseId,
+                collectionId = collectionId,
+                documentId = id,
+                data = mapOf("vote" to newVoteCount)
+            )
+            
+            val updatedTranslatedLyric = documentToTranslatedLyric(updatedDocument)
+            emit(Resource.Success(updatedTranslatedLyric))
         }.fold(
-            onSuccess = {
-                logger.debug("Successfully deleted translated lyric with id: $id")
-                emit(Resource.Success(true))
+            onSuccess = { translatedLyric ->
+                logger.debug("updateVote --> Successfully updated vote for translated lyric id: $id")
             },
             onFailure = { e ->
-                logger.error("Error deleting translated lyric with id: $id", e)
+                logger.error("updateVote --> Error updating vote for translated lyric id: $id", e)
                 if (e is AppwriteException && e.code == 404) {
-                    emit(Resource.Success(false))
+                    emit(Resource.notFoundError("Translated lyric not found with id: $id"))
                 } else {
-                    emit(Resource.Error("Failed to delete translated lyric: ${e.message}", e as? Exception))
+                    emit(Resource.Error("Failed to update vote: ${e.message}", e as? Exception))
                 }
             }
         )
-        logger.debug("delete completed for translated lyric id: $id")
+        logger.debug("updateVote --> Completed for translated lyric id: $id")
     }.flowOn(Dispatchers.IO)
-
-    private fun documentToTranslatedLyric(document: Document<Map<String, Any>>): TranslatedLyric {
-        val videoId = document.data["videoId"] as String
-        val translatedLyric = document.data["translatedLyric"] as String
-        val language = document.data["language"] as String
-        
-        return TranslatedLyric(
-            id = document.data["id"] as String,
-            videoId = videoId,
-            translatedLyric = translatedLyric,
-            language = language,
-            vote = (document.data["vote"] as Number).toInt(),
-            contributor = document.data["contributor"] as String,
-            contributorEmail = document.data["contributorEmail"] as String,
-            sha256hash = document.data["sha256hash"]?.toString()
-                ?: "$videoId-$language-$translatedLyric".sha256()
-        )
-    }
-} 
+}
