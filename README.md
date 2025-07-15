@@ -2,6 +2,12 @@
 
 A robust and scalable RESTful API service for managing song lyrics, translations, and not-found records. Built with Kotlin, Spring Boot, and Appwrite database, featuring advanced duplicate detection and clean architecture patterns.
 
+SimpMusic Lyrics is focusing on YouTube Music, providing data from `videoId` of the track. The database is populated by the community, SimpMusic app users, and through automated crawling of other web services.
+### Main endpoint: HTTPS only
+```
+https://api-lyrics.simpmusic.org/
+```
+
 [![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/) [![Spring Boot](https://img.shields.io/badge/spring%20boot-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot) [![Appwrite](https://img.shields.io/badge/appwrite-%23FD366E.svg?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
 
 ## Features
