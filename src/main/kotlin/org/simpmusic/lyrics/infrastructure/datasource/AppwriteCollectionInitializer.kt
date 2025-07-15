@@ -163,17 +163,6 @@ class AppwriteCollectionInitializer(
         emit(Resource.Loading)
         
         runCatching {
-            // id attribute (UUID)
-            logger.info("Creating id attribute for notfound_lyrics...")
-            val idAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = notFoundLyricsCollectionId,
-                key = "id",
-                size = 64,
-                required = true
-            )
-            logger.info("Created id attribute: ${idAttribute.key}")
-            
             // videoId attribute
             logger.info("Creating videoId attribute for notfound_lyrics...")
             val videoIdAttribute = databases.createStringAttribute(
