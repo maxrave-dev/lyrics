@@ -83,7 +83,8 @@ class AppwriteCollectionInitializer(
                 collectionId = translatedLyricsCollectionId,
                 key = "vote",
                 required = true,
-                min = 0
+                min = -999999,
+                max = 999999,
             )
             logger.info("Created vote attribute: ${voteAttribute.key}")
             
