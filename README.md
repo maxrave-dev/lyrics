@@ -4,13 +4,11 @@ A robust and scalable RESTful API service for managing song lyrics, translations
 
 SimpMusic Lyrics is focusing on YouTube Music, providing data from `videoId` of the track. The database is populated by the community, SimpMusic app users, and through automated crawling of other web services.
 
-## Latest Updates
-
-**July 15, 2023:** Implemented standardized API response format for all endpoints using `ApiResult<T>` wrapper, providing consistent handling of success, error, and processing states. [View Changelog](changelogs/2023-07-15_api_standardization.md)
+***The app is in alpha phase, the APIs will be changed***
 
 ### Main endpoint: HTTPS only
 ```
-https://api-lyrics.simpmusic.org/
+https://api-lyrics.simpmusic.org/v1
 ```
 
 [![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/) [![Spring Boot](https://img.shields.io/badge/spring%20boot-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot) [![Appwrite](https://img.shields.io/badge/appwrite-%23FD366E.svg?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
@@ -41,6 +39,8 @@ cd lyrics-api
    - Project ID
    - API Endpoint
    - API Key
+   - ADMIN_IPS: List of IPs allowed to perform admin actions without Rate Limiting
+   - HMAC_SECRET: A secret key for HMAC authentication (should be kept secret)
 
 ### 3. Configure Environment
 Create `.env` following the `.env.example`
@@ -76,7 +76,7 @@ The application automatically creates required collections:
 
 ### Base URL
 ```
-http://localhost:8080/api/lyrics
+http://localhost:8080/v1
 ```
 
 ### SwaggerUI
@@ -90,29 +90,29 @@ http://localhost:8080/swagger-ui/index.html
 ```http
 # All endpoints now return ApiResult<T> wrapper with standardized response format
 
-GET    /api/lyrics/{videoId}           # Get lyrics by video ID -> ApiResult<List<LyricResponseDTO>>
-GET    /api/lyrics/{videoId}?limit=10&offset=0 # Get paginated lyrics by video ID -> ApiResult<List<LyricResponseDTO>>
-GET    /api/lyrics/search/title?title= # Search by song title -> ApiResult<List<LyricResponseDTO>>
-GET    /api/lyrics/search/title?title=&limit=10&offset=0 # Paginated search by song title -> ApiResult<List<LyricResponseDTO>>
-GET    /api/lyrics/search/artist?artist= # Search by artist -> ApiResult<List<LyricResponseDTO>>
-GET    /api/lyrics/search/artist?artist=&limit=10&offset=0 # Paginated search by artist -> ApiResult<List<LyricResponseDTO>>
-GET    /api/lyrics/search?q=           # Full-text search -> ApiResult<List<LyricResponseDTO>>
-GET    /api/lyrics/search?q=&limit=10&offset=0 # Paginated full-text search -> ApiResult<List<LyricResponseDTO>>
-POST   /api/lyrics                     # Create new lyrics -> ApiResult<LyricResponseDTO>
+GET    /v1/{videoId}           # Get lyrics by video ID
+GET    /v1/{videoId}?limit=10&offset=0 # Get paginated lyrics by video ID
+GET    /v1/search/title?title= # Search by song title
+GET    /v1/search/title?title=&limit=10&offset=0 # Paginated search by song title
+GET    /v1/search/artist?artist= # Search by artist
+GET    /v1/search/artist?artist=&limit=10&offset=0 # Paginated search by artist
+GET    /v1/search?q=           # Full-text search
+GET    /v1/search?q=&limit=10&offset=0 # Paginated full-text search
+POST   /v1                     # Create new lyrics
 ```
 
 #### Translated Lyrics
 ```http
-GET    /api/lyrics/translated/{videoId}    # Get translations -> ApiResult<List<TranslatedLyricResponseDTO>>
-GET    /api/lyrics/translated/{videoId}?limit=10&offset=0 # Get paginated translations -> ApiResult<List<TranslatedLyricResponseDTO>>
-GET    /api/lyrics/translated/{videoId}/{language} # Get specific translation -> ApiResult<TranslatedLyricResponseDTO>
-POST   /api/lyrics/translated              # Create translation -> ApiResult<TranslatedLyricResponseDTO>
+GET    /v1/translated/{videoId}    # Get translations
+GET    /v1/translated/{videoId}?limit=10&offset=0 # Get paginated translations
+GET    /v1/translated/{videoId}/{language} # Get specific translation
+POST   /v1/translated              # Create translation
 ```
 
 #### Voting
 ```http
-POST   /api/lyrics/vote                    # Vote for lyrics -> ApiResult<LyricResponseDTO>
-POST   /api/lyrics/translated/vote         # Vote for translated lyrics -> ApiResult<TranslatedLyricResponseDTO>
+POST   /v1/vote                    # Vote for lyrics -> ApiResult<LyricResponseDTO>
+POST   /v1/translated/vote         # Vote for translated lyrics -> ApiResult<TranslatedLyricResponseDTO>
 ```
 
 ### API Response Format
@@ -178,7 +178,7 @@ X-Timestamp: 1630000000000
 X-HMAC: base64EncodedHmacToken
 
 # Example command
-curl -X POST "http://localhost:8080/api/lyrics" \
+curl -X POST "http://localhost:8080/v1" \
   -H "Content-Type: application/json" \
   -H "X-Timestamp: 1630000000000" \
   -H "X-HMAC: base64EncodedHmacToken" \
@@ -192,7 +192,7 @@ curl -X POST "http://localhost:8080/api/lyrics" \
 - [x] Paginated search
 - [x] Standardized API response format
 - [ ] Input data
-- [ ] Public server
+- [x] Public server
 - [ ] Frontend integration
 - [ ] Automated find not-found lyrics
 - [ ] Automated remove negative votes lyrics
