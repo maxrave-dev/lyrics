@@ -1,5 +1,6 @@
 package org.simpmusic.lyrics.application.dto.response
 
+import org.simpmusic.lyrics.application.dto.response.BaseResponseDTO
 import java.time.LocalDateTime
 
 /**
@@ -9,5 +10,5 @@ import java.time.LocalDateTime
 data class NotFoundLyricResponseDTO(
     val id: String,
     val videoId: String,
-    val addedDate: LocalDateTime
-) 
+    val addedDate: LocalDateTime,
+) : BaseResponseDTO

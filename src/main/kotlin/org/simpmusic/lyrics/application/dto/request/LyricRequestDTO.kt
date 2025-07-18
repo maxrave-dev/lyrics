@@ -1,7 +1,6 @@
 package org.simpmusic.lyrics.application.dto.request
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import org.simpmusic.lyrics.application.dto.BaseDTO
 import org.simpmusic.lyrics.extensions.sha256
 
 /**
@@ -19,10 +18,8 @@ data class LyricRequestDTO(
     val richSyncLyrics: String? = null,
     val vote: Int = 0,
     val contributor: String,
-    val contributorEmail: String
-): BaseDTO {
+    val contributorEmail: String,
+) : BaseRequestDTO {
     @JsonIgnore
-    override fun getUniqueId(): String {
-        return "$videoId-$durationSeconds-$plainLyric-$syncedLyrics-$richSyncLyrics".sha256()
-    }
-} 
+    override fun getUniqueId(): String = "$videoId-$durationSeconds-$plainLyric-$syncedLyrics-$richSyncLyrics".sha256()
+}

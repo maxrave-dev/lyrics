@@ -1,5 +1,7 @@
 package org.simpmusic.lyrics.application.dto.response
 
+import org.simpmusic.lyrics.application.dto.response.BaseResponseDTO
+
 /**
  * Standard error response format for API
  *
@@ -22,8 +24,8 @@ package org.simpmusic.lyrics.application.dto.response
 data class ErrorResponseDTO(
     val error: Boolean = true,
     val code: Int,
-    val reason: String
-) {
+    val reason: String,
+) : BaseResponseDTO {
     companion object {
         // HTTP Status codes for common error scenarios
         const val CONFLICT = 409 // Duplicate data
@@ -37,49 +39,54 @@ data class ErrorResponseDTO(
          * Usage: ErrorResponseDTO.duplicateData("This lyrics already exists")
          * Returns: { "error": true, "code": 409, "reason": "This lyrics already exists" }
          */
-        fun duplicateData(reason: String = "Data already exists") = ErrorResponseDTO(
-            code = CONFLICT,
-            reason = reason
-        )
+        fun duplicateData(reason: String = "Data already exists") =
+            ErrorResponseDTO(
+                code = CONFLICT,
+                reason = reason,
+            )
 
         /**
          * Create error response for bad request
          * Usage: ErrorResponseDTO.badRequest("Invalid videoId format")
          * Returns: { "error": true, "code": 400, "reason": "Invalid videoId format" }
          */
-        fun badRequest(reason: String = "Invalid request") = ErrorResponseDTO(
-            code = BAD_REQUEST,
-            reason = reason
-        )
+        fun badRequest(reason: String = "Invalid request") =
+            ErrorResponseDTO(
+                code = BAD_REQUEST,
+                reason = reason,
+            )
 
         /**
          * Create error response for not found
          * Usage: ErrorResponseDTO.notFound("Lyrics not found")
          * Returns: { "error": true, "code": 404, "reason": "Lyrics not found" }
          */
-        fun notFound(reason: String = "Resource not found") = ErrorResponseDTO(
-            code = NOT_FOUND,
-            reason = reason
-        )
+        fun notFound(reason: String = "Resource not found") =
+            ErrorResponseDTO(
+                code = NOT_FOUND,
+                reason = reason,
+            )
 
         /**
          * Create error response for server error
          * Usage: ErrorResponseDTO.serverError("Database connection failed")
          * Returns: { "error": true, "code": 500, "reason": "Database connection failed" }
          */
-        fun serverError(reason: String = "Internal server error") = ErrorResponseDTO(
-            code = INTERNAL_SERVER_ERROR,
-            reason = reason
-        )
+        fun serverError(reason: String = "Internal server error") =
+            ErrorResponseDTO(
+                code = INTERNAL_SERVER_ERROR,
+                reason = reason,
+            )
 
         /**
          * Create error response for validation error
          * Usage: ErrorResponseDTO.validationError("Required field missing: songTitle")
          * Returns: { "error": true, "code": 422, "reason": "Required field missing: songTitle" }
          */
-        fun validationError(reason: String = "Validation failed") = ErrorResponseDTO(
-            code = UNPROCESSABLE_ENTITY,
-            reason = reason
-        )
+        fun validationError(reason: String = "Validation failed") =
+            ErrorResponseDTO(
+                code = UNPROCESSABLE_ENTITY,
+                reason = reason,
+            )
     }
 }

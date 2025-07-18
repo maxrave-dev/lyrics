@@ -1,6 +1,6 @@
-package org.simpmusic.lyrics.application.dto
+package org.simpmusic.lyrics.application.dto.request
 
-interface BaseDTO {
+interface BaseRequestDTO {
     /**
      * Hash the main data of the DTO to create a unique identifier.
      * Use SHA256 to generate 64 character unique ID.
