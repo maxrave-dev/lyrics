@@ -1,7 +1,6 @@
 package org.simpmusic.lyrics.application.dto.request
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import org.simpmusic.lyrics.application.dto.BaseDTO
 import org.simpmusic.lyrics.extensions.sha256
 
 /**
@@ -14,10 +13,8 @@ data class TranslatedLyricRequestDTO(
     val language: String, // 2-letter code
     val vote: Int = 0,
     val contributor: String,
-    val contributorEmail: String
-): BaseDTO {
+    val contributorEmail: String,
+) : BaseRequestDTO {
     @JsonIgnore
-    override fun getUniqueId(): String {
-        return "$videoId-$language-$translatedLyric".sha256()
-    }
+    override fun getUniqueId(): String = "$videoId-$language-$translatedLyric".sha256()
 } 

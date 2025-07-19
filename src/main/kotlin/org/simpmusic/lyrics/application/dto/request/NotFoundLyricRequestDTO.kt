@@ -1,7 +1,6 @@
 package org.simpmusic.lyrics.application.dto.request
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import org.simpmusic.lyrics.application.dto.BaseDTO
 import org.simpmusic.lyrics.extensions.sha256
 import java.time.LocalDateTime
 
@@ -11,10 +10,8 @@ import java.time.LocalDateTime
  */
 data class NotFoundLyricRequestDTO(
     val videoId: String,
-    val addedDate: LocalDateTime = LocalDateTime.now()
-): BaseDTO {
+    val addedDate: LocalDateTime = LocalDateTime.now(),
+) : BaseRequestDTO {
     @JsonIgnore
-    override fun getUniqueId(): String {
-        return videoId.sha256()
-    }
+    override fun getUniqueId(): String = videoId.sha256()
 } 

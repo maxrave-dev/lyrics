@@ -12,8 +12,8 @@ import org.simpmusic.lyrics.domain.model.Lyric
 import org.simpmusic.lyrics.domain.model.NotFoundLyric
 import org.simpmusic.lyrics.domain.model.TranslatedLyric
 
-fun Lyric.toResponseDTO(): LyricResponseDTO {
-    return LyricResponseDTO(
+fun Lyric.toResponseDTO(): LyricResponseDTO =
+    LyricResponseDTO(
         id = id,
         videoId = videoId,
         songTitle = songTitle,
@@ -25,12 +25,11 @@ fun Lyric.toResponseDTO(): LyricResponseDTO {
         richSyncLyrics = richSyncLyrics,
         vote = vote,
         contributor = contributor,
-        contributorEmail = contributorEmail
+        contributorEmail = contributorEmail,
     )
-}
 
-fun LyricRequestDTO.toEntity(): Lyric {
-    return Lyric(
+fun LyricRequestDTO.toEntity(): Lyric =
+    Lyric(
         id = ID.unique(),
         videoId = videoId,
         songTitle = songTitle,
@@ -42,48 +41,43 @@ fun LyricRequestDTO.toEntity(): Lyric {
         richSyncLyrics = richSyncLyrics,
         vote = vote,
         contributor = contributor,
-        contributorEmail = contributorEmail
+        contributorEmail = contributorEmail,
     )
-}
 
-fun TranslatedLyric.toResponseDTO(): TranslatedLyricResponseDTO {
-    return TranslatedLyricResponseDTO(
+fun TranslatedLyric.toResponseDTO(): TranslatedLyricResponseDTO =
+    TranslatedLyricResponseDTO(
         id = id,
         videoId = videoId,
         translatedLyric = translatedLyric,
         language = language,
         vote = vote,
         contributor = contributor,
-        contributorEmail = contributorEmail
+        contributorEmail = contributorEmail,
     )
-}
 
-fun TranslatedLyricRequestDTO.toEntity(): TranslatedLyric {
-    return TranslatedLyric(
-        id = this.getUniqueId(),
+fun TranslatedLyricRequestDTO.toEntity(): TranslatedLyric =
+    TranslatedLyric(
+        id = ID.unique(),
         videoId = videoId,
         translatedLyric = translatedLyric,
         language = language,
         vote = vote,
         contributor = contributor,
-        contributorEmail = contributorEmail
+        contributorEmail = contributorEmail,
     )
-}
 
-fun NotFoundLyric.toResponseDTO(): NotFoundLyricResponseDTO {
-    return NotFoundLyricResponseDTO(
+fun NotFoundLyric.toResponseDTO(): NotFoundLyricResponseDTO =
+    NotFoundLyricResponseDTO(
         id = videoId,
         videoId = videoId,
-        addedDate = addedDate
+        addedDate = addedDate,
     )
-}
 
-fun NotFoundLyricRequestDTO.toEntity(): NotFoundLyric {
-    return NotFoundLyric(
+fun NotFoundLyricRequestDTO.toEntity(): NotFoundLyric =
+    NotFoundLyric(
         videoId = videoId,
-        addedDate = addedDate
+        addedDate = addedDate,
     )
-}
 
 fun documentToTranslatedLyric(document: Document<Map<String, Any>>): TranslatedLyric {
     val videoId = document.data["videoId"] as String
@@ -98,7 +92,8 @@ fun documentToTranslatedLyric(document: Document<Map<String, Any>>): TranslatedL
         vote = (document.data["vote"] as Number).toInt(),
         contributor = document.data["contributor"] as String,
         contributorEmail = document.data["contributorEmail"] as String,
-        sha256hash = document.data["sha256hash"]?.toString()
-            ?: "$videoId-$language-$translatedLyric".sha256()
+        sha256hash =
+            document.data["sha256hash"]?.toString()
+                ?: "$videoId-$language-$translatedLyric".sha256(),
     )
 }
