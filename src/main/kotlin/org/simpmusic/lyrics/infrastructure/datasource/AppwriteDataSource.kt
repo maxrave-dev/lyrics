@@ -26,6 +26,7 @@ class AppwriteDataSource(
     @Qualifier("lyricsCollectionId") private val lyricsCollectionId: String,
     @Qualifier("translatedLyricsCollectionId") private val translatedLyricsCollectionId: String,
     @Qualifier("notFoundLyricsCollectionId") private val notFoundLyricsCollectionId: String,
+    @Qualifier("notFoundTranslatedLyricsCollectionId") private val notFoundTranslatedLyricsCollectionId: String,
     private val appwriteCollectionInitializer: AppwriteCollectionInitializer
 ) {
     private val logger = LoggerFactory.getLogger(AppwriteDataSource::class.java)
@@ -167,6 +168,41 @@ class AppwriteDataSource(
                     }
                 } else {
                     logger.error("Error checking notfound_lyrics collection: ${e.message}")
+                    throw e
+                }
+            }
+
+            logger.info("Step 6: Checking if notfound_translated_lyrics collection exists: $notFoundTranslatedLyricsCollectionId")
+            try {
+                databases.getCollection(databaseId, notFoundTranslatedLyricsCollectionId)
+                logger.info("Collection $notFoundTranslatedLyricsCollectionId already exists")
+            } catch (e: AppwriteException) {
+                if (e.code == 404) {
+                    logger.info("Collection $notFoundTranslatedLyricsCollectionId doesn't exist, creating...")
+                    databases.createCollection(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        name = "NotFoundTranslatedLyrics"
+                    )
+                    logger.info("Successfully created collection $notFoundTranslatedLyricsCollectionId")
+                    
+                    // Create attributes for notfound_translated_lyrics collection
+                    appwriteCollectionInitializer.createNotFoundTranslatedLyricsCollectionAttributes().collect { result ->
+                        when (result) {
+                            is Resource.Success -> {
+                                logger.info("Successfully created all notfound_translated_lyrics attributes")
+                            }
+                            is Resource.Error -> {
+                                logger.error("Failed to create notfound_translated_lyrics attributes: ${result.message}")
+                                throw Exception(result.message, result.exception)
+                            }
+                            is Resource.Loading -> {
+                                logger.debug("Creating notfound_translated_lyrics attributes in progress...")
+                            }
+                        }
+                    }
+                } else {
+                    logger.error("Error checking notfound_translated_lyrics collection: ${e.message}")
                     throw e
                 }
             }
