@@ -41,6 +41,7 @@ jobs:
 
     - name: Setup SSH key
       env:
+        VPS_HOST: ${{ secrets.VPS_HOST }}
         VPS_SSH_PASSPHRASE: ${{secrets.VPS_SSH_PASSPHRASE}}
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |
@@ -50,6 +51,8 @@ jobs:
         chmod 600 ~/.ssh/lyrics
 
         echo 'echo $VPS_SSH_PASSPHRASE' > ~/.ssh/passphrase && chmod 700 ~/.ssh/passphrase
+        
+        ssh-keyscan $VPS_HOST >> ~/.ssh/known_hosts
 
         # Start SSH agent
         eval `ssh-agent -s`
