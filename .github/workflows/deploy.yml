@@ -51,9 +51,6 @@ jobs:
         # Start SSH agent
         eval `ssh-agent -s`
 
-        # Add VPS to known hosts
-        ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
-
         # Add SSH key to agent
         ssh-add ~/.ssh/lyrics
 
