@@ -48,13 +48,6 @@ jobs:
         VPS_SSH_PASSPHRASE: ${{secrets.VPS_SSH_PASSPHRASE}}
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |  
-        eval $(ssh-agent -s)
-        mkdir -p ~/.ssh
-        chmod 700 ~/.ssh
-        
-        echo "$VPS_SSH_KEY" > ~/.ssh/lyrics
-        chmod 600 ~/.ssh/lyrics
-        
         ssh-agent -a $SSH_AUTH_SOCK > /dev/null
         echo "echo $VPS_SSH_PASSPHRASE" > ~/.ssh_askpass && chmod +x ~/.ssh_askpass
         echo "$VPS_SSH_KEY" | tr -d '\r' | DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add - >/dev/null
