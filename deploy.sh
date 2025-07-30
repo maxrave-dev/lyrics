@@ -8,6 +8,7 @@ set -e  # Exit on any error
 # Configuration - Update these variables according to your setup
 VPS_HOST="${VPS_HOST}"
 VPS_USER="${VPS_USER}"
+VPS_SSH_KEY="~/.ssh/lyrics"  # Optional: specify SSH key path
 REMOTE_APP_DIR="${REMOTE_APP_DIR}"
 REMOTE_SERVICE_NAME="lyrics.service"
 LOCAL_ENV_FILE=".env"
@@ -38,12 +39,20 @@ print_error() {
 
 # Function to execute SSH commands
 ssh_exec() {
-    ssh "$VPS_USER@$VPS_HOST" "$1"
+    if [ -n "$VPS_SSH_KEY" ]; then
+        ssh -i "$VPS_SSH_KEY" "$VPS_USER@$VPS_HOST" "$1"
+    else
+        ssh "$VPS_USER@$VPS_HOST" "$1"
+    fi
 }
 
 # Function to copy files via SCP
 scp_copy() {
-    scp "$1" "$VPS_USER@$VPS_HOST:$2"
+    if [ -n "$VPS_SSH_KEY" ]; then
+        scp -i "$VPS_SSH_KEY" "$1" "$VPS_USER@$VPS_HOST:$2"
+    else
+        scp "$1" "$VPS_USER@$VPS_HOST:$2"
+    fi
 }
 
 # Function to check if file exists
