@@ -53,15 +53,15 @@ jobs:
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
         
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/lyrics
+        echo "$VPS_SSH_KEY" > ~/.ssh/lyrics
         chmod 600 ~/.ssh/lyrics
         
         # Set passphrase and add key
         export DISPLAY=:0
-        echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/lyrics
+        echo "$VPS_SSH_PASSPHRASE" | ssh-add ~/.ssh/lyrics
         
         # Add known hosts
-        ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+        ssh-keyscan $VPS_HOST >> ~/.ssh/known_hosts
 
     - name: Deploy to VPS
       env:
