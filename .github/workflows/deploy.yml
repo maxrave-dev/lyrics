@@ -48,8 +48,8 @@ jobs:
         VPS_SSH_PASSPHRASE: ${{secrets.VPS_SSH_PASSPHRASE}}
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |
-        sudo apt-get update && sudo apt-get install -y sshpass
-        sudo apt install ssh-askpass
+        # Install expect
+        sudo apt-get update && sudo apt-get install -y expect
         
         eval $(ssh-agent -s)
         mkdir -p ~/.ssh
@@ -58,9 +58,13 @@ jobs:
         echo "$VPS_SSH_KEY" > ~/.ssh/lyrics
         chmod 600 ~/.ssh/lyrics
         
-        # Set passphrase and add key
-        export DISPLAY=:0
-        echo "$VPS_SSH_PASSPHRASE" | ssh-add ~/.ssh/lyrics
+        # Use expect to handle passphrase
+        expect << 'EOF'
+        spawn ssh-add ~/.ssh/lyrics
+        expect "Enter passphrase*"
+        send "$VPS_SSH_PASSPHRASE\r"
+        expect eof
+        EOF
         
         # Add known hosts
         ssh-keyscan $VPS_HOST >> ~/.ssh/known_hosts
