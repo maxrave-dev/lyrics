@@ -39,17 +39,30 @@ jobs:
         echo "ADMIN_IPS=${{ secrets.ADMIN_IPS }}" >> ./.env
         echo "HMAC_SECRET=${{ secrets.HMAC_SECRET }}" >> ./.env
 
-    - name: Deploy to VPS
+    - name: Setup SSH key
       env:
-        VPS_HOST: ${{ secrets.VPS_HOST }}
-        VPS_USER: ${{ secrets.VPS_USER }}
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |
         # Create SSH key file from secret
         mkdir -p ~/.ssh
         echo "$VPS_SSH_KEY" > ~/.ssh/lyrics
         chmod 600 ~/.ssh/lyrics
-        
+
+        # Start SSH agent
+        eval `ssh-agent -s`
+
+        # Add VPS to known hosts
+        ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+
+        # Add SSH key to agent
+        ssh-add ~/.ssh/lyrics
+
+    - name: Deploy to VPS
+      env:
+        VPS_HOST: ${{ secrets.VPS_HOST }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+        REMOTE_APP_DIR: ${{ secrets.REMOTE_APP_DIR }}
+      run: |
         # Run deployment
         ./deploy.sh
 
@@ -58,29 +71,16 @@ jobs:
       run: |
         # Extract appversion from gradle/libs.versions.toml
         APP_VERSION=$(grep '^appversion = ' gradle/libs.versions.toml | sed 's/appversion = "\(.*\)"/\1/')
-        VERSION="v${APP_VERSION}"
+        VERSION="${APP_VERSION}"
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Extracted version: $VERSION from libs.versions.toml"
 
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ steps.version.outputs.version }}
-        release_name: Release ${{ steps.version.outputs.version }}
-        body: |
-          🚀 **Automated Release**
-          
-          **Changes:**
-          - Successfully built and deployed to VPS
-          - Version from libs.versions.toml: ${{ steps.version.outputs.version }}
-          - Commit: ${{ github.sha }}
-          
-          **Deployment Info:**
-          - Branch: ${{ github.ref_name }}
-          - Workflow: ${{ github.workflow }}
-          - Triggered by: ${{ github.actor }}
+        tag_name: v${{ steps.version.outputs.version }}
+        release_name: ${{ steps.version.outputs.version }}
         draft: false
         prerelease: false
