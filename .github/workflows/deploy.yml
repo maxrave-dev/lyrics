@@ -62,7 +62,7 @@ jobs:
         expect << 'EOF'
         spawn ssh-add ~/.ssh/lyrics
         expect "Enter passphrase*"
-        send "$VPS_SSH_PASSPHRASE\r"
+        send "${{ secrets.VPS_SSH_PASSPHRASE }}\r"
         expect eof
         EOF
         
