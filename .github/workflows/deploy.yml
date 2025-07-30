@@ -48,10 +48,20 @@ jobs:
         VPS_SSH_PASSPHRASE: ${{secrets.VPS_SSH_PASSPHRASE}}
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |
-        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-        echo "echo $VPS_SSH_PASSPHRASE" > ~/.ssh_askpass && chmod +x ~/.ssh_askpass
-        echo "$VPS_SSH_KEY" | tr -d 'r' | DISPLAY=None SSH_ASKPASS=~/.ssh_askpass ssh-add - >/dev/null
-        ssh-keyscan $VPS_HOST >> ~/.ssh/known_hosts
+        sudo apt-get update && sudo apt-get install -y sshpass
+        eval $(ssh-agent -s)
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/lyrics
+        chmod 600 ~/.ssh/lyrics
+        
+        # Set passphrase and add key
+        export DISPLAY=:0
+        echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/lyrics
+        
+        # Add known hosts
+        ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
     - name: Deploy to VPS
       env:
