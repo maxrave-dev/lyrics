@@ -71,6 +71,7 @@ The application automatically creates required collections:
 - `lyrics` - Main lyrics collection
 - `translated_lyrics` - Translated lyrics collection  
 - `notfound_lyrics` - Not found tracking collection
+- `notfound_translated_lyrics` - Not found translation collection
 
 ## API Documentation
 
@@ -217,6 +218,12 @@ src="https://raw.githubusercontent.com/liberapay/liberapay.com/master/www/assets
  </p>
 
 ## SimpMusic is sponsored by:
+<br />
+<a href="https://vercel.com/oss">
+  <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
+</a>
+<br />
+<br />
 <a href="https://www.digitalocean.com/?refcode=d7f6eedfb9a9&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge"><img src="https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg" width="300" alt="DigitalOcean Referral Badge" /></a>
 <br>
 <a href="https://crowdin.com">
@@ -227,6 +234,9 @@ src="https://raw.githubusercontent.com/liberapay/liberapay.com/master/www/assets
 <img src="https://github.com/maxrave-dev/SimpMusic/blob/dev/asset/sentry.svg?raw=true" width="300"/>
 </a>
 <br>
+
+Check out the Vercel open-source program:
+- https://vercel.com/open-source-program
 
 Get free $200 credit over 60 days on DigitalOcean: [GET NOW](https://www.digitalocean.com/?refcode=d7f6eedfb9a9&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
 

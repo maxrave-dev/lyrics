@@ -27,6 +27,9 @@ class AppwriteConfig {
 
     @Value("\${appwrite.collection.notfound_lyrics}")
     private lateinit var notFoundLyricsCollectionId: String
+
+    @Value("\${appwrite.collection.notfound_translated_lyrics}")
+    private lateinit var notFoundTranslatedLyricsCollectionId: String
     
     @Value("\${appwrite.apikey}")
     private lateinit var apiKey: String
@@ -67,5 +70,10 @@ class AppwriteConfig {
     @Bean
     fun notFoundLyricsCollectionId(): String {
         return notFoundLyricsCollectionId
+    }
+
+    @Bean
+    fun notFoundTranslatedLyricsCollectionId(): String {
+        return notFoundTranslatedLyricsCollectionId
     }
 } 
