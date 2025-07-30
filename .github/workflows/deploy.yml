@@ -49,6 +49,8 @@ jobs:
         VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |
         sudo apt-get update && sudo apt-get install -y sshpass
+        sudo apt install ssh-askpass
+        
         eval $(ssh-agent -s)
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
