@@ -95,13 +95,13 @@ deploy() {
     print_info "Copying JAR file to VPS..."
     scp_copy "$JAR_FILE" "/tmp/lyrics.jar"
     
-    ssh_exec "sudo mv /tmp/lyrics.jar $REMOTE_APP_DIR/"
+    ssh_exec "sudo mv -f /tmp/lyrics.jar $REMOTE_APP_DIR/"
     ssh_exec "sudo chown $VPS_USER:$VPS_USER $REMOTE_APP_DIR/lyrics.jar"
     
     # Step 6: Copy .env file to VPS
     print_info "Copying .env file to VPS..."
     scp_copy "$LOCAL_ENV_FILE" "/tmp/.env"
-    ssh_exec "sudo mv /tmp/.env $REMOTE_APP_DIR/"
+    ssh_exec "sudo mv -f /tmp/.env $REMOTE_APP_DIR/"
     ssh_exec "sudo chown $VPS_USER:$VPS_USER $REMOTE_APP_DIR/.env"
     
     # Step 7: Set proper permissions
