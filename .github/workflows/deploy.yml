@@ -4,85 +4,83 @@ on:
   push:
     branches: [ main ]
 
-env:
-  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/gradle-build-action@v2
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
 
-    - name: Make deploy script executable
-      run: chmod +x deploy.sh
+      - name: Make deploy script executable
+        run: chmod +x deploy.sh
 
-    - name: Write .env
-      env:
-        APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
-        APPWRITE_PROJECT: ${{ secrets.APPWRITE_PROJECT }}
-        APPWRITE_DATABASE: ${{ secrets.APPWRITE_DATABASE }}
-        APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
-        ADMIN_IPS: ${{ secrets.ADMIN_IPS }}
-        HMAC_SECRET: ${{ secrets.HMAC_SECRET }}
-      run: |
-        echo 'APPWRITE_ENDPOINT=${{ secrets.APPWRITE_ENDPOINT }}' > ./.env
-        echo "APPWRITE_PROJECT=${{ secrets.APPWRITE_PROJECT }}" >> ./.env
-        echo "APPWRITE_DATABASE=${{ secrets.APPWRITE_DATABASE }}" >> ./.env
-        echo "APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}" >> ./.env
-        echo "ADMIN_IPS=${{ secrets.ADMIN_IPS }}" >> ./.env
-        echo "HMAC_SECRET=${{ secrets.HMAC_SECRET }}" >> ./.env
+      - name: Write .env
+        env:
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT: ${{ secrets.APPWRITE_PROJECT }}
+          APPWRITE_DATABASE: ${{ secrets.APPWRITE_DATABASE }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+          ADMIN_IPS: ${{ secrets.ADMIN_IPS }}
+          HMAC_SECRET: ${{ secrets.HMAC_SECRET }}
+        run: |
+          echo 'APPWRITE_ENDPOINT=${{ secrets.APPWRITE_ENDPOINT }}' > ./.env
+          echo "APPWRITE_PROJECT=${{ secrets.APPWRITE_PROJECT }}" >> ./.env
+          echo "APPWRITE_DATABASE=${{ secrets.APPWRITE_DATABASE }}" >> ./.env
+          echo "APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}" >> ./.env
+          echo "ADMIN_IPS=${{ secrets.ADMIN_IPS }}" >> ./.env
+          echo "HMAC_SECRET=${{ secrets.HMAC_SECRET }}" >> ./.env
 
-    - name: Setup SSH key
-      env:
-        VPS_HOST: ${{ secrets.VPS_HOST }}
-        VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-      run: |
-        eval $(ssh-agent -s)
-        mkdir -p ~/.ssh
-        chmod 700 ~/.ssh
-        
-        echo "$VPS_SSH_KEY" > ~/.ssh/lyrics
-        chmod 600 ~/.ssh/lyrics
-        
-        ssh-add ~/.ssh/lyrics
-        
-        # Add known hosts
-        ssh-keyscan $VPS_HOST >> ~/.ssh/known_hosts
+      - name: Setup SSH key
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          # Create SSH key file from secret
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/lyrics
+          chmod 600 ~/.ssh/lyrics
+          
+          # Start SSH agent
+          eval `ssh-agent -s`
+          
+          # Add VPS to known hosts
+          ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+          
+          # Add SSH key to agent
+          ssh-add ~/.ssh/lyrics
 
-    - name: Deploy to VPS
-      env:
-        VPS_HOST: ${{ secrets.VPS_HOST }}
-        VPS_USER: ${{ secrets.VPS_USER }}
-        REMOTE_APP_DIR: ${{ secrets.REMOTE_APP_DIR }}
-      run: |
-        # Run deployment
-        ./deploy.sh
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          REMOTE_APP_DIR: ${{ secrets.REMOTE_APP_DIR }}
+        run: |
+          # Run deployment
+          ./deploy.sh
 
-    - name: Extract version from libs.versions.toml
-      id: version
-      run: |
-        # Extract appversion from gradle/libs.versions.toml
-        APP_VERSION=$(grep '^appversion = ' gradle/libs.versions.toml | sed 's/appversion = "\(.*\)"/\1/')
-        VERSION="${APP_VERSION}"
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Extracted version: $VERSION from libs.versions.toml"
+      - name: Extract version from libs.versions.toml
+        id: version
+        run: |
+          # Extract appversion from gradle/libs.versions.toml
+          APP_VERSION=$(grep '^appversion = ' gradle/libs.versions.toml | sed 's/appversion = "\(.*\)"/\1/')
+          VERSION="${APP_VERSION}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION from libs.versions.toml"
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-      with:
-        tag_name: v${{ steps.version.outputs.version }}
-        release_name: ${{ steps.version.outputs.version }}
-        draft: false
-        prerelease: false
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: true
