@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main ]
 
+env:
+  SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -41,21 +44,20 @@ jobs:
 
       - name: Setup SSH key
         env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
-          # Create SSH key file from secret
+          eval $(ssh-agent -s)
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          
           echo "$VPS_SSH_KEY" > ~/.ssh/lyrics
           chmod 600 ~/.ssh/lyrics
           
-          # Start SSH agent
-          eval `ssh-agent -s`
-          
-          # Add VPS to known hosts
-          ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
-          
-          # Add SSH key to agent
           ssh-add ~/.ssh/lyrics
+          
+          # Add known hosts
+          ssh-keyscan $VPS_HOST >> ~/.ssh/known_hosts
 
       - name: Deploy to VPS
         env:
@@ -78,7 +80,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
