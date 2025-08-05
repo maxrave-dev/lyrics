@@ -1,7 +1,5 @@
 package org.simpmusic.lyrics.application.dto.response
 
-import org.simpmusic.lyrics.application.dto.response.BaseResponseDTO
-
 /**
  * Response Data Transfer Object for Lyrics
  * Used for GET operations where server always returns an ID

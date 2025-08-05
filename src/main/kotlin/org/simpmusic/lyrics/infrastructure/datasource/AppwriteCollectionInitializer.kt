@@ -21,316 +21,341 @@ class AppwriteCollectionInitializer(
     @Qualifier("databaseId") private val databaseId: String,
     @Qualifier("translatedLyricsCollectionId") private val translatedLyricsCollectionId: String,
     @Qualifier("notFoundLyricsCollectionId") private val notFoundLyricsCollectionId: String,
-    @Qualifier("notFoundTranslatedLyricsCollectionId") private val notFoundTranslatedLyricsCollectionId: String
+    @Qualifier("notFoundTranslatedLyricsCollectionId") private val notFoundTranslatedLyricsCollectionId: String,
 ) {
     private val logger = LoggerFactory.getLogger(AppwriteCollectionInitializer::class.java)
-    
+
     /**
      * Create all required attributes for the TranslatedLyrics collection
      */
-    fun createTranslatedLyricsCollectionAttributes(): Flow<Resource<Boolean>> = flow {
-        logger.info("--- Starting translated_lyrics attribute creation ---")
-        emit(Resource.Loading)
-        
-        runCatching {
-            // id attribute (UUID)
-            logger.info("Creating id attribute for translated_lyrics...")
-            val idAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "id",
-                size = 64,
-                required = true
-            )
-            logger.info("Created id attribute: ${idAttribute.key}")
-            
-            // videoId attribute
-            logger.info("Creating videoId attribute for translated_lyrics...")
-            val videoIdAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "videoId",
-                size = 20,
-                required = true
-            )
-            logger.info("Created videoId attribute: ${videoIdAttribute.key}")
-            
-            // translatedLyric attribute (LRC format)
-            logger.info("Creating translatedLyric attribute for translated_lyrics...")
-            val translatedLyricAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "translatedLyric",
-                size = 65535, // Large size for LRC content
-                required = true
-            )
-            logger.info("Created translatedLyric attribute: ${translatedLyricAttribute.key}")
-            
-            // language attribute (2-letter code)
-            logger.info("Creating language attribute for translated_lyrics...")
-            val languageAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "language",
-                size = 2,
-                required = true
-            )
-            logger.info("Created language attribute: ${languageAttribute.key}")
-            
-            // vote attribute
-            logger.info("Creating vote attribute for translated_lyrics...")
-            val voteAttribute = databases.createIntegerAttribute(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "vote",
-                required = true,
-                min = -999999,
-                max = 999999,
-            )
-            logger.info("Created vote attribute: ${voteAttribute.key}")
-            
-            // contributor attribute
-            logger.info("Creating contributor attribute for translated_lyrics...")
-            val contributorAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "contributor",
-                size = 255,
-                required = true
-            )
-            logger.info("Created contributor attribute: ${contributorAttribute.key}")
-            
-            // contributorEmail attribute
-            logger.info("Creating contributorEmail attribute for translated_lyrics...")
-            val contributorEmailAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "contributorEmail",
-                size = 255,
-                required = true
-            )
-            logger.info("Created contributorEmail attribute: ${contributorEmailAttribute.key}")
+    fun createTranslatedLyricsCollectionAttributes(): Flow<Resource<Boolean>> =
+        flow {
+            logger.info("--- Starting translated_lyrics attribute creation ---")
+            runCatching {
+                // id attribute (UUID)
+                logger.info("Creating id attribute for translated_lyrics...")
+                val idAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "id",
+                        size = 64,
+                        required = true,
+                    )
+                logger.info("Created id attribute: ${idAttribute.key}")
 
-            // sha256hash attribute
-            logger.info("Creating sha256hash attribute for translated_lyrics...")
-            val sha256hashAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "sha256hash",
-                size = 64,
-                required = true
-            )
-            logger.info("Created sha256hash attribute: ${sha256hashAttribute.key}")
-            
-            // Create indexes
-            logger.info("Creating indexes for translated_lyrics...")
-            
-            // Index on videoId for fast lookup
-            val videoIdIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "videoId_index",
-                type = IndexType.KEY,
-                attributes = listOf("videoId")
-            )
-            logger.info("Created videoId index: ${videoIdIndex.key}")
-            
-            // Index on language for filtering by language
-            val languageIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = translatedLyricsCollectionId,
-                key = "language_index",
-                type = IndexType.KEY,
-                attributes = listOf("language")
-            )
-            logger.info("Created language index: ${languageIndex.key}")
-            
-            logger.info("Successfully created all translated_lyrics attributes and indexes")
-            emit(Resource.Success(true))
-        }.getOrElse { e ->
-            logger.error("Failed to create translated_lyrics attributes: ${e.message}", e)
+                // videoId attribute
+                logger.info("Creating videoId attribute for translated_lyrics...")
+                val videoIdAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "videoId",
+                        size = 20,
+                        required = true,
+                    )
+                logger.info("Created videoId attribute: ${videoIdAttribute.key}")
+
+                // translatedLyric attribute (LRC format)
+                logger.info("Creating translatedLyric attribute for translated_lyrics...")
+                val translatedLyricAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "translatedLyric",
+                        size = 65535, // Large size for LRC content
+                        required = true,
+                    )
+                logger.info("Created translatedLyric attribute: ${translatedLyricAttribute.key}")
+
+                // language attribute (2-letter code)
+                logger.info("Creating language attribute for translated_lyrics...")
+                val languageAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "language",
+                        size = 2,
+                        required = true,
+                    )
+                logger.info("Created language attribute: ${languageAttribute.key}")
+
+                // vote attribute
+                logger.info("Creating vote attribute for translated_lyrics...")
+                val voteAttribute =
+                    databases.createIntegerAttribute(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "vote",
+                        required = true,
+                        min = -999999,
+                        max = 999999,
+                    )
+                logger.info("Created vote attribute: ${voteAttribute.key}")
+
+                // contributor attribute
+                logger.info("Creating contributor attribute for translated_lyrics...")
+                val contributorAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "contributor",
+                        size = 255,
+                        required = true,
+                    )
+                logger.info("Created contributor attribute: ${contributorAttribute.key}")
+
+                // contributorEmail attribute
+                logger.info("Creating contributorEmail attribute for translated_lyrics...")
+                val contributorEmailAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "contributorEmail",
+                        size = 255,
+                        required = true,
+                    )
+                logger.info("Created contributorEmail attribute: ${contributorEmailAttribute.key}")
+
+                // sha256hash attribute
+                logger.info("Creating sha256hash attribute for translated_lyrics...")
+                val sha256hashAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "sha256hash",
+                        size = 64,
+                        required = true,
+                    )
+                logger.info("Created sha256hash attribute: ${sha256hashAttribute.key}")
+
+                // Create indexes
+                logger.info("Creating indexes for translated_lyrics...")
+
+                // Index on videoId for fast lookup
+                val videoIdIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "videoId_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("videoId"),
+                    )
+                logger.info("Created videoId index: ${videoIdIndex.key}")
+
+                // Index on language for filtering by language
+                val languageIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = translatedLyricsCollectionId,
+                        key = "language_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("language"),
+                    )
+                logger.info("Created language index: ${languageIndex.key}")
+
+                logger.info("Successfully created all translated_lyrics attributes and indexes")
+                emit(Resource.Success(true))
+            }.getOrElse { e ->
+                logger.error("Failed to create translated_lyrics attributes: ${e.message}", e)
+                emit(Resource.Error("Failed to create translated_lyrics attributes: ${e.message}", e as? Exception))
+            }
+        }.catch { e ->
+            logger.error("Exception in createTranslatedLyricsCollectionAttributes", e)
             emit(Resource.Error("Failed to create translated_lyrics attributes: ${e.message}", e as? Exception))
-        }
-    }.catch { e ->
-        logger.error("Exception in createTranslatedLyricsCollectionAttributes", e)
-        emit(Resource.Error("Failed to create translated_lyrics attributes: ${e.message}", e as? Exception))
-    }.flowOn(Dispatchers.IO)
-    
+        }.flowOn(Dispatchers.IO)
+
     /**
      * Create all required attributes for the NotFoundLyrics collection
      */
-    fun createNotFoundLyricsCollectionAttributes(): Flow<Resource<Boolean>> = flow {
-        logger.info("--- Starting notfound_lyrics attribute creation ---")
-        emit(Resource.Loading)
-        
-        runCatching {
-            // videoId attribute
-            logger.info("Creating videoId attribute for notfound_lyrics...")
-            val videoIdAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = notFoundLyricsCollectionId,
-                key = "videoId",
-                size = 20,
-                required = true
-            )
-            logger.info("Created videoId attribute: ${videoIdAttribute.key}")
-            
-            // addedDate attribute (DateTime)
-            logger.info("Creating addedDate attribute for notfound_lyrics...")
-            val addedDateAttribute = databases.createDatetimeAttribute(
-                databaseId = databaseId,
-                collectionId = notFoundLyricsCollectionId,
-                key = "addedDate",
-                required = true
-            )
-            logger.info("Created addedDate attribute: ${addedDateAttribute.key}")
-            
-            // Create indexes
-            logger.info("Creating indexes for notfound_lyrics...")
-            
-            // Index on videoId for fast lookup
-            val videoIdIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = notFoundLyricsCollectionId,
-                key = "videoId_index",
-                type = IndexType.KEY,
-                attributes = listOf("videoId")
-            )
-            logger.info("Created videoId index: ${videoIdIndex.key}")
-            
-            // Index on addedDate for sorting by date
-            val addedDateIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = notFoundLyricsCollectionId,
-                key = "addedDate_index",
-                type = IndexType.KEY,
-                attributes = listOf("addedDate")
-            )
-            logger.info("Created addedDate index: ${addedDateIndex.key}")
-            
-            logger.info("Successfully created all notfound_lyrics attributes and indexes")
-            emit(Resource.Success(true))
-        }.getOrElse { e ->
-            logger.error("Failed to create notfound_lyrics attributes: ${e.message}", e)
+    fun createNotFoundLyricsCollectionAttributes(): Flow<Resource<Boolean>> =
+        flow {
+            logger.info("--- Starting notfound_lyrics attribute creation ---")
+            runCatching {
+                // videoId attribute
+                logger.info("Creating videoId attribute for notfound_lyrics...")
+                val videoIdAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = notFoundLyricsCollectionId,
+                        key = "videoId",
+                        size = 20,
+                        required = true,
+                    )
+                logger.info("Created videoId attribute: ${videoIdAttribute.key}")
+
+                // addedDate attribute (DateTime)
+                logger.info("Creating addedDate attribute for notfound_lyrics...")
+                val addedDateAttribute =
+                    databases.createDatetimeAttribute(
+                        databaseId = databaseId,
+                        collectionId = notFoundLyricsCollectionId,
+                        key = "addedDate",
+                        required = true,
+                    )
+                logger.info("Created addedDate attribute: ${addedDateAttribute.key}")
+
+                // Create indexes
+                logger.info("Creating indexes for notfound_lyrics...")
+
+                // Index on videoId for fast lookup
+                val videoIdIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = notFoundLyricsCollectionId,
+                        key = "videoId_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("videoId"),
+                    )
+                logger.info("Created videoId index: ${videoIdIndex.key}")
+
+                // Index on addedDate for sorting by date
+                val addedDateIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = notFoundLyricsCollectionId,
+                        key = "addedDate_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("addedDate"),
+                    )
+                logger.info("Created addedDate index: ${addedDateIndex.key}")
+
+                logger.info("Successfully created all notfound_lyrics attributes and indexes")
+                emit(Resource.Success(true))
+            }.getOrElse { e ->
+                logger.error("Failed to create notfound_lyrics attributes: ${e.message}", e)
+                emit(Resource.Error("Failed to create notfound_lyrics attributes: ${e.message}", e as? Exception))
+            }
+        }.catch { e ->
+            logger.error("Exception in createNotFoundLyricsCollectionAttributes", e)
             emit(Resource.Error("Failed to create notfound_lyrics attributes: ${e.message}", e as? Exception))
-        }
-    }.catch { e ->
-        logger.error("Exception in createNotFoundLyricsCollectionAttributes", e)
-        emit(Resource.Error("Failed to create notfound_lyrics attributes: ${e.message}", e as? Exception))
-    }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.IO)
 
     /**
      * Create all required attributes for the NotFoundTranslatedLyrics collection
      */
-    fun createNotFoundTranslatedLyricsCollectionAttributes(): Flow<Resource<Boolean>> = flow {
-        logger.info("--- Starting notfound_translated_lyrics attribute creation ---")
-        emit(Resource.Loading)
-        
-        runCatching {
-            // videoId attribute
-            logger.info("Creating videoId attribute for notfound_translated_lyrics...")
-            val videoIdAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "videoId",
-                size = 20,
-                required = true
-            )
-            logger.info("Created videoId attribute: ${videoIdAttribute.key}")
-            
-            // translationLanguage attribute (2-letter code)
-            logger.info("Creating translationLanguage attribute for notfound_translated_lyrics...")
-            val translationLanguageAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "translationLanguage",
-                size = 2,
-                required = true
-            )
-            logger.info("Created translationLanguage attribute: ${translationLanguageAttribute.key}")
-            
-            // addedDate attribute (DateTime)
-            logger.info("Creating addedDate attribute for notfound_translated_lyrics...")
-            val addedDateAttribute = databases.createDatetimeAttribute(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "addedDate",
-                required = true
-            )
-            logger.info("Created addedDate attribute: ${addedDateAttribute.key}")
+    fun createNotFoundTranslatedLyricsCollectionAttributes(): Flow<Resource<Boolean>> =
+        flow {
+            logger.info("--- Starting notfound_translated_lyrics attribute creation ---")
+            runCatching {
+                // videoId attribute
+                logger.info("Creating videoId attribute for notfound_translated_lyrics...")
+                val videoIdAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "videoId",
+                        size = 20,
+                        required = true,
+                    )
+                logger.info("Created videoId attribute: ${videoIdAttribute.key}")
 
-            // sha256hash attribute
-            logger.info("Creating sha256hash attribute for notfound_translated_lyrics...")
-            val sha256hashAttribute = databases.createStringAttribute(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "sha256hash",
-                size = 64,
-                required = true
-            )
-            logger.info("Created sha256hash attribute: ${sha256hashAttribute.key}")
-            
-            // Create indexes
-            logger.info("Creating indexes for notfound_translated_lyrics...")
-            
-            // Index on videoId for fast lookup
-            val videoIdIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "videoId_index",
-                type = IndexType.KEY,
-                attributes = listOf("videoId")
-            )
-            logger.info("Created videoId index: ${videoIdIndex.key}")
+                // translationLanguage attribute (2-letter code)
+                logger.info("Creating translationLanguage attribute for notfound_translated_lyrics...")
+                val translationLanguageAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "translationLanguage",
+                        size = 2,
+                        required = true,
+                    )
+                logger.info("Created translationLanguage attribute: ${translationLanguageAttribute.key}")
 
-            // Index on translationLanguage for filtering by language
-            val languageIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "translationLanguage_index",
-                type = IndexType.KEY,
-                attributes = listOf("translationLanguage")
-            )
-            logger.info("Created translationLanguage index: ${languageIndex.key}")
+                // addedDate attribute (DateTime)
+                logger.info("Creating addedDate attribute for notfound_translated_lyrics...")
+                val addedDateAttribute =
+                    databases.createDatetimeAttribute(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "addedDate",
+                        required = true,
+                    )
+                logger.info("Created addedDate attribute: ${addedDateAttribute.key}")
 
-            // Composite index on videoId and translationLanguage for fast lookup
-            val compositeIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "videoId_language_index",
-                type = IndexType.KEY,
-                attributes = listOf("videoId", "translationLanguage")
-            )
-            logger.info("Created composite videoId-translationLanguage index: ${compositeIndex.key}")
-            
-            // Index on addedDate for sorting by date
-            val addedDateIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "addedDate_index",
-                type = IndexType.KEY,
-                attributes = listOf("addedDate")
-            )
-            logger.info("Created addedDate index: ${addedDateIndex.key}")
+                // sha256hash attribute
+                logger.info("Creating sha256hash attribute for notfound_translated_lyrics...")
+                val sha256hashAttribute =
+                    databases.createStringAttribute(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "sha256hash",
+                        size = 64,
+                        required = true,
+                    )
+                logger.info("Created sha256hash attribute: ${sha256hashAttribute.key}")
 
-            // Index on sha256hash for fast lookup
-            val sha256hashIndex = databases.createIndex(
-                databaseId = databaseId,
-                collectionId = notFoundTranslatedLyricsCollectionId,
-                key = "sha256hash_index",
-                type = IndexType.KEY,
-                attributes = listOf("sha256hash")
-            )
-            logger.info("Created sha256hash index: ${sha256hashIndex.key}")
-            
-            logger.info("Successfully created all notfound_translated_lyrics attributes and indexes")
-            emit(Resource.Success(true))
-        }.getOrElse { e ->
-            logger.error("Failed to create notfound_translated_lyrics attributes: ${e.message}", e)
+                // Create indexes
+                logger.info("Creating indexes for notfound_translated_lyrics...")
+
+                // Index on videoId for fast lookup
+                val videoIdIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "videoId_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("videoId"),
+                    )
+                logger.info("Created videoId index: ${videoIdIndex.key}")
+
+                // Index on translationLanguage for filtering by language
+                val languageIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "translationLanguage_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("translationLanguage"),
+                    )
+                logger.info("Created translationLanguage index: ${languageIndex.key}")
+
+                // Composite index on videoId and translationLanguage for fast lookup
+                val compositeIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "videoId_language_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("videoId", "translationLanguage"),
+                    )
+                logger.info("Created composite videoId-translationLanguage index: ${compositeIndex.key}")
+
+                // Index on addedDate for sorting by date
+                val addedDateIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "addedDate_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("addedDate"),
+                    )
+                logger.info("Created addedDate index: ${addedDateIndex.key}")
+
+                // Index on sha256hash for fast lookup
+                val sha256hashIndex =
+                    databases.createIndex(
+                        databaseId = databaseId,
+                        collectionId = notFoundTranslatedLyricsCollectionId,
+                        key = "sha256hash_index",
+                        type = IndexType.KEY,
+                        attributes = listOf("sha256hash"),
+                    )
+                logger.info("Created sha256hash index: ${sha256hashIndex.key}")
+
+                logger.info("Successfully created all notfound_translated_lyrics attributes and indexes")
+                emit(Resource.Success(true))
+            }.getOrElse { e ->
+                logger.error("Failed to create notfound_translated_lyrics attributes: ${e.message}", e)
+                emit(
+                    Resource.Error(
+                        "Failed to create notfound_translated_lyrics attributes: ${e.message}",
+                        e as? Exception,
+                    ),
+                )
+            }
+        }.catch { e ->
+            logger.error("Exception in createNotFoundTranslatedLyricsCollectionAttributes", e)
             emit(Resource.Error("Failed to create notfound_translated_lyrics attributes: ${e.message}", e as? Exception))
-        }
-    }.catch { e ->
-        logger.error("Exception in createNotFoundTranslatedLyricsCollectionAttributes", e)
-        emit(Resource.Error("Failed to create notfound_translated_lyrics attributes: ${e.message}", e as? Exception))
-    }.flowOn(Dispatchers.IO)
-} 
+        }.flowOn(Dispatchers.IO)
+}
