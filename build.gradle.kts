@@ -49,14 +49,14 @@ dependencies {
     implementation(libs.appwrite.sdk)
 
     implementation(libs.spring.swagger)
-    
+
     // Rate Limiting
     implementation(libs.bucket4j.spring.boot.starter)
     implementation(libs.spring.boot.starter.cache)
     implementation(libs.javax.cache.api)
     implementation(libs.caffeine)
     implementation(libs.caffeine.jcache)
-    
+
     // Validation
     implementation(libs.spring.boot.starter.validation)
 }

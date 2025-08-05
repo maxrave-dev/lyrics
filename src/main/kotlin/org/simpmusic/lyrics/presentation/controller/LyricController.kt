@@ -2,13 +2,24 @@
 
 package org.simpmusic.lyrics.presentation.controller
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.withContext
-import org.simpmusic.lyrics.application.dto.request.*
+import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.VoteRequestDTO
 import org.simpmusic.lyrics.application.dto.response.*
 import org.simpmusic.lyrics.application.service.LyricService
 import org.simpmusic.lyrics.domain.model.Resource
+import org.simpmusic.lyrics.uitls.DocsErrorResponse
+import org.simpmusic.lyrics.uitls.DocsLyricResponseSuccess
+import org.simpmusic.lyrics.uitls.DocsLyricsListResponseSuccess
+import org.simpmusic.lyrics.uitls.DocsTranslatedLyricResponseSuccess
+import org.simpmusic.lyrics.uitls.DocsTranslatedLyricsListResponseSuccess
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
@@ -23,6 +34,41 @@ class LyricController(
 ) {
     private val logger = LoggerFactory.getLogger(LyricController::class.java)
 
+    // ========== Lyric API Endpoints ==========
+    @Operation(
+        summary = "Get Lyrics by Video ID",
+        description = "Fetches lyrics associated with a specific video ID. Optionally supports pagination with limit and offset.",
+        tags = ["Lyrics"],
+        operationId = "getLyricsByVideoId",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successfully retrieved lyrics",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema =
+                            Schema(
+                                implementation = LyricResponseDTO::class,
+                            ),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Lyrics not found for the given video ID",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema =
+                            Schema(
+                                implementation = DocsErrorResponse::class,
+                            ),
+                    ),
+                ],
+            ),
+        ],
+    )
     @GetMapping("/{videoId}")
     suspend fun getLyricsByVideoId(
         @PathVariable videoId: String,
@@ -50,8 +96,12 @@ class LyricController(
                         )
                     }
                 }
+
                 is Resource.Error -> {
-                    logger.error("getLyricsByVideoId --> Failed to get lyrics by videoId: ${result.message}", result.exception)
+                    logger.error(
+                        "getLyricsByVideoId --> Failed to get lyrics by videoId: ${result.message}",
+                        result.exception,
+                    )
                     val errorResponse = ErrorResponseDTO.serverError("Failed to get lyrics by videoId: $videoId")
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                         ApiResult.Error(
@@ -59,19 +109,47 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<List<LyricResponseDTO>>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing request to get lyrics for videoId: $videoId",
-                                ),
-                        ),
-                    )
             }
         }
 
+    @Operation(
+        summary = "Search Lyrics by Song Title",
+        description = "Searches for lyrics by song title with optional pagination using limit and offset parameters.",
+        tags = ["Lyrics"],
+        operationId = "getLyricsBySongTitle",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successfully retrieved lyrics matching the title",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsLyricsListResponseSuccess::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No lyrics found for the given title",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while searching lyrics",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
     @GetMapping("/search/title")
     suspend fun getLyricsBySongTitle(
         @RequestParam title: String,
@@ -99,8 +177,12 @@ class LyricController(
                         )
                     }
                 }
+
                 is Resource.Error -> {
-                    logger.error("getLyricsBySongTitle --> Failed to get lyrics by title: ${result.message}", result.exception)
+                    logger.error(
+                        "getLyricsBySongTitle --> Failed to get lyrics by title: ${result.message}",
+                        result.exception,
+                    )
                     val errorResponse = ErrorResponseDTO.serverError("Failed to get lyrics by title: $title")
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                         ApiResult.Error(
@@ -108,19 +190,47 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<List<LyricResponseDTO>>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing request to get lyrics for title: $title",
-                                ),
-                        ),
-                    )
             }
         }
 
+    @Operation(
+        summary = "Search Lyrics by Artist",
+        description = "Searches for lyrics by artist name with optional pagination using limit and offset parameters.",
+        tags = ["Lyrics"],
+        operationId = "getLyricsByArtist",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successfully retrieved lyrics by the artist",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsLyricsListResponseSuccess::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No lyrics found for the given artist",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while searching lyrics",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
     @GetMapping("/search/artist")
     suspend fun getLyricsByArtist(
         @RequestParam artist: String,
@@ -148,8 +258,12 @@ class LyricController(
                         )
                     }
                 }
+
                 is Resource.Error -> {
-                    logger.error("getLyricsByArtist --> Failed to get lyrics by artist: ${result.message}", result.exception)
+                    logger.error(
+                        "getLyricsByArtist --> Failed to get lyrics by artist: ${result.message}",
+                        result.exception,
+                    )
                     val errorResponse = ErrorResponseDTO.serverError("Failed to get lyrics by artist: $artist")
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                         ApiResult.Error(
@@ -157,19 +271,47 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<List<LyricResponseDTO>>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing request to get lyrics for artist: $artist",
-                                ),
-                        ),
-                    )
             }
         }
 
+    @Operation(
+        summary = "Search Lyrics",
+        description = "Performs a general search across lyrics content with optional pagination using limit and offset parameters.",
+        tags = ["Lyrics"],
+        operationId = "searchLyrics",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successfully retrieved lyrics matching the search query",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsLyricsListResponseSuccess::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No lyrics found for the search query",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while searching lyrics",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
     @GetMapping("/search")
     suspend fun searchLyrics(
         @RequestParam q: String,
@@ -197,6 +339,7 @@ class LyricController(
                         )
                     }
                 }
+
                 is Resource.Error -> {
                     logger.error("searchLyrics --> Failed to search lyrics: ${result.message}", result.exception)
                     val errorResponse = ErrorResponseDTO.serverError("Failed to search lyrics with query: $q")
@@ -206,19 +349,47 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<List<LyricResponseDTO>>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing search request with query: $q",
-                                ),
-                        ),
-                    )
             }
         }
 
+    @Operation(
+        summary = "Create New Lyric",
+        description = "Creates a new lyric entry with the provided lyric data.",
+        tags = ["Lyrics"],
+        operationId = "createLyric",
+        responses = [
+            ApiResponse(
+                responseCode = "201",
+                description = "Successfully created lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsLyricResponseSuccess::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Bad request - Invalid lyric data",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while creating lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
     @PostMapping
     suspend fun createLyric(
         @RequestBody lyricRequestDTO: LyricRequestDTO,
@@ -235,6 +406,7 @@ class LyricController(
                         ),
                     )
                 }
+
                 is Resource.Error -> {
                     logger.error("createLyric --> Failed to create lyric: ${result.message}", result.exception)
                     val errorResponse = result.toErrorResponse()
@@ -244,21 +416,49 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<LyricResponseDTO>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing lyric creation request",
-                                ),
-                        ),
-                    )
             }
         }
 
     // ========== TranslatedLyrics API Endpoints ==========
 
+    @Operation(
+        summary = "Get Translated Lyrics by Video ID",
+        description = "Fetches translated lyrics for a specific video ID with optional pagination using limit and offset parameters.",
+        tags = ["Translated Lyrics"],
+        operationId = "getTranslatedLyricsByVideoId",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successfully retrieved translated lyrics",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsTranslatedLyricsListResponseSuccess::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No translated lyrics found for the given video ID",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while retrieving translated lyrics",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
     @GetMapping("/translated/{videoId}")
     suspend fun getTranslatedLyricsByVideoId(
         @PathVariable videoId: String,
@@ -278,7 +478,8 @@ class LyricController(
                             ),
                         )
                     } else {
-                        val errorResponse = ErrorResponseDTO.notFound("Translated lyrics not found for videoId: $videoId")
+                        val errorResponse =
+                            ErrorResponseDTO.notFound("Translated lyrics not found for videoId: $videoId")
                         ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                             ApiResult.Error(
                                 error = errorResponse,
@@ -286,31 +487,61 @@ class LyricController(
                         )
                     }
                 }
+
                 is Resource.Error -> {
                     logger.error(
                         "getTranslatedLyricsByVideoId --> Failed to get translated lyrics by videoId: ${result.message}",
                         result.exception,
                     )
-                    val errorResponse = ErrorResponseDTO.serverError("Failed to get translated lyrics for videoId: $videoId")
+                    val errorResponse =
+                        ErrorResponseDTO.serverError("Failed to get translated lyrics for videoId: $videoId")
                     ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                         ApiResult.Error(
                             error = errorResponse,
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<List<TranslatedLyricResponseDTO>>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing request to get translated lyrics for videoId: $videoId",
-                                ),
-                        ),
-                    )
             }
         }
 
+    @Operation(
+        summary = "Get Translated Lyric by Video ID and Language",
+        description = "Fetches a specific translated lyric for a video ID in a particular language.",
+        tags = ["Translated Lyrics"],
+        operationId = "getTranslatedLyricByVideoIdAndLanguage",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successfully retrieved translated lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsTranslatedLyricResponseSuccess::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "No translated lyric found for the given video ID and language",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while retrieving translated lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
     @GetMapping("/translated/{videoId}/{language}")
     suspend fun getTranslatedLyricByVideoIdAndLanguage(
         @PathVariable videoId: String,
@@ -340,6 +571,7 @@ class LyricController(
                         )
                     }
                 }
+
                 is Resource.Error -> {
                     logger.error("Failed to get translated lyrics: ${result.message}", result.exception)
                     val errorResponse =
@@ -352,19 +584,47 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<TranslatedLyricResponseDTO>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing request to get translated lyrics for videoId: $videoId and language: $language",
-                                ),
-                        ),
-                    )
             }
         }
 
+    @Operation(
+        summary = "Create New Translated Lyric",
+        description = "Creates a new translated lyric entry with the provided translated lyric data.",
+        tags = ["Translated Lyrics"],
+        operationId = "createTranslatedLyric",
+        responses = [
+            ApiResponse(
+                responseCode = "201",
+                description = "Successfully created translated lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsTranslatedLyricResponseSuccess::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Bad request - Invalid translated lyric data",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while creating translated lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
     @PostMapping("/translated")
     suspend fun createTranslatedLyric(
         @RequestBody translatedLyricRequestDTO: TranslatedLyricRequestDTO,
@@ -381,8 +641,12 @@ class LyricController(
                         ),
                     )
                 }
+
                 is Resource.Error -> {
-                    logger.error("createTranslatedLyric --> Failed to create translated lyric: ${result.message}", result.exception)
+                    logger.error(
+                        "createTranslatedLyric --> Failed to create translated lyric: ${result.message}",
+                        result.exception,
+                    )
                     val errorResponse = result.toErrorResponse()
                     ResponseEntity.status(HttpStatus.valueOf(errorResponse.code)).body(
                         ApiResult.Error(
@@ -390,21 +654,45 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<TranslatedLyricResponseDTO>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing translated lyric creation request",
-                                ),
-                        ),
-                    )
             }
         }
 
     // ========== Vote API Endpoints ==========
 
+    @Operation(
+        summary = "Vote for a Lyric",
+        description = "Allows users to vote for a lyric by its ID. Returns the updated lyric data.",
+        tags = ["Lyrics"],
+        operationId = "voteLyric",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successfully voted for lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema =
+                            Schema(
+                                implementation = DocsLyricResponseSuccess::class,
+                            ),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Error occurred while processing the vote",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema =
+                            Schema(
+                                implementation = DocsErrorResponse::class,
+                            ),
+                    ),
+                ],
+            ),
+        ],
+    )
     @PostMapping("/vote")
     suspend fun voteLyric(
         @RequestBody voteDTO: VoteRequestDTO,
@@ -422,6 +710,7 @@ class LyricController(
                         ),
                     )
                 }
+
                 is Resource.Error -> {
                     logger.error("voteLyric --> Failed to process vote: ${result.message}", result.exception)
                     val errorResponse = result.toErrorResponse()
@@ -431,19 +720,47 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<LyricResponseDTO>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing vote for lyric id: ${voteDTO.id}",
-                                ),
-                        ),
-                    )
             }
         }
 
+    @Operation(
+        summary = "Vote for a Translated Lyric",
+        description = "Allows users to vote for a translated lyric by its ID. Returns the updated translated lyric data.",
+        tags = ["Translated Lyrics"],
+        operationId = "voteTranslatedLyric",
+        responses = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Successfully voted for translated lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsTranslatedLyricResponseSuccess::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Error occurred while processing the vote for translated lyric",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+            ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while processing the vote",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = DocsErrorResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
     @PostMapping("/translated/vote")
     suspend fun voteTranslatedLyric(
         @RequestBody voteDTO: VoteRequestDTO,
@@ -461,6 +778,7 @@ class LyricController(
                         ),
                     )
                 }
+
                 is Resource.Error -> {
                     logger.error("voteTranslatedLyric --> Failed to process vote: ${result.message}", result.exception)
                     val errorResponse = result.toErrorResponse()
@@ -470,16 +788,6 @@ class LyricController(
                         ),
                     )
                 }
-                is Resource.Loading ->
-                    ResponseEntity.status(HttpStatus.PROCESSING).body(
-                        ApiResult.Loading<TranslatedLyricResponseDTO>(
-                            processing =
-                                LoadingResponseDTO.fromMessage(
-                                    HttpStatus.PROCESSING.value(),
-                                    "Processing vote for translated lyric id: ${voteDTO.id}",
-                                ),
-                        ),
-                    )
             }
         }
 }

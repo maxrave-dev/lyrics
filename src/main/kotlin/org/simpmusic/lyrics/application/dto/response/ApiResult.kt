@@ -1,19 +1,43 @@
 package org.simpmusic.lyrics.application.dto.response
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping
+import io.swagger.v3.oas.annotations.media.Schema
+import java.util.Objects
+import kotlin.reflect.KClass
 
 /**
- * Sealed class để đại diện cho tất cả các loại phản hồi API có thể xảy ra.
- * Điều này cho phép xử lý phản hồi API một cách an toàn về kiểu (type-safe).
+ * Sealed class to represent all possible API response types.
+ * This allows type-safe handling of API responses.
  *
- * @param T Kiểu dữ liệu thành công
+ * @param T The success data type
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "type",
+)
+@JsonSubTypes(
+    JsonSubTypes.Type(value = ApiResult.Success::class, name = "success"),
+    JsonSubTypes.Type(value = ApiResult.Error::class, name = "error"),
+)
+@Schema(
+    description = "API Result wrapper",
+    discriminatorProperty = "type",
+    discriminatorMapping = [
+        DiscriminatorMapping(value = "success", schema = ApiResult.Success::class),
+        DiscriminatorMapping(value = "error", schema = ApiResult.Error::class),
+    ],
+    oneOf = [ApiResult.Success::class, ApiResult.Error::class],
+)
 sealed class ApiResult<out T> {
     /**
-     * Đại diện cho phản hồi API thành công với dữ liệu.
+     * Represents a successful API response with data.
      *
-     * @param data Dữ liệu phản hồi
+     * @param data The response data
      */
     data class Success<T>(
         val data: T,
@@ -21,40 +45,33 @@ sealed class ApiResult<out T> {
     ) : ApiResult<T>()
 
     /**
-     * Đại diện cho phản hồi API lỗi.
+     * Represents an error API response.
      *
-     * @param error Thông tin chi tiết về lỗi
+     * @param error Detailed error information
      */
     data class Error(
         val error: ErrorResponseDTO,
         val success: Boolean = false,
     ) : ApiResult<Nothing>()
 
-    /**
-     * Đại diện cho phản hồi API đang xử lý.
-     *
-     * @param processing Thông tin về trạng thái xử lý
-     */
-    data class Loading<T>(
-        val processing: LoadingResponseDTO,
-        val success: Boolean = false,
-    ) : ApiResult<T>()
-
     companion object {
         /**
-         * Tạo phản hồi thành công với dữ liệu
+         * Create a successful response with data
          */
         fun <T> success(data: T): ApiResult<T> = Success(data)
 
         /**
-         * Tạo phản hồi lỗi từ ErrorResponseDTO
+         * Create an error response from ErrorResponseDTO
          */
         fun error(errorResponseDTO: ErrorResponseDTO): ApiResult<Nothing> = Error(errorResponseDTO)
 
         /**
-         * Tạo phản hồi lỗi từ mã lỗi và thông báo
+         * Create an error response from error code and message
          */
-        fun error(code: Int, reason: String): ApiResult<Nothing> =
+        fun error(
+            code: Int,
+            reason: String,
+        ): ApiResult<Nothing> =
             Error(
                 ErrorResponseDTO(
                     code = code,
@@ -63,21 +80,13 @@ sealed class ApiResult<out T> {
             )
 
         /**
-         * Tạo phản hồi Not Found với thông báo
+         * Create a Not Found response with message
          */
-        fun notFound(reason: String = "Resource not found"): ApiResult<Nothing> =
-            Error(ErrorResponseDTO.notFound(reason))
+        fun notFound(reason: String = "Resource not found"): ApiResult<Nothing> = Error(ErrorResponseDTO.notFound(reason))
 
         /**
-         * Tạo phản hồi Server Error với thông báo
+         * Create a Server Error response with message
          */
-        fun serverError(reason: String = "Internal server error"): ApiResult<Nothing> =
-            Error(ErrorResponseDTO.serverError(reason))
-
-        /**
-         * Tạo phản hồi đang xử lý với thông báo
-         */
-        fun <T> loading(code: Int, message: String): ApiResult<T> =
-            Loading(LoadingResponseDTO.fromMessage(code, message))
+        fun serverError(reason: String = "Internal server error"): ApiResult<Nothing> = Error(ErrorResponseDTO.serverError(reason))
     }
 }
