@@ -88,8 +88,8 @@ deploy() {
     print_info "Creating backup of current version..."
     ssh_exec "sudo systemctl stop $REMOTE_SERVICE_NAME || true"
     ssh_exec "sudo mkdir -p $REMOTE_APP_DIR/backup"
-    ssh_exec "sudo cp $REMOTE_APP_DIR/lyrics.jar $REMOTE_APP_DIR/backup/ 2>/dev/null || true"
-    ssh_exec "sudo cp $REMOTE_APP_DIR/.env $REMOTE_APP_DIR/backup/ 2>/dev/null || true"
+    ssh_exec "sudo mv -f $REMOTE_APP_DIR/lyrics.jar $REMOTE_APP_DIR/backup/ 2>/dev/null || true"
+    ssh_exec "sudo mv -f $REMOTE_APP_DIR/.env $REMOTE_APP_DIR/backup/ 2>/dev/null || true"
     
     # Step 5: Copy new JAR file to VPS
     print_info "Copying JAR file to VPS..."
