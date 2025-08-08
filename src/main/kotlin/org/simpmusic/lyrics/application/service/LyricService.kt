@@ -19,6 +19,8 @@ import org.simpmusic.lyrics.domain.repository.NotFoundTranslatedLyricRepository
 import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
 import org.simpmusic.lyrics.extensions.*
 import org.simpmusic.lyrics.infrastructure.datasource.AppwriteDataSource
+import org.simpmusic.lyrics.infrastructure.datasource.LyricSearchDocument
+import org.simpmusic.lyrics.infrastructure.datasource.MeilisearchDataSource
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -33,21 +35,62 @@ class LyricService(
     private val notFoundLyricRepository: NotFoundLyricRepository,
     private val notFoundTranslatedLyricRepository: NotFoundTranslatedLyricRepository,
     private val appwriteDataSource: AppwriteDataSource,
+    private val meilisearchDataSource: MeilisearchDataSource,
     private val serviceScope: CoroutineScope,
 ) {
     private val logger = LoggerFactory.getLogger(LyricService::class.java)
 
     /**
-     * Initialize Appwrite database and collections
+     * Initialize Appwrite database and collections, then initialize Meilisearch
      * Uses shareHot to make the flow hot and allow multiple collectors
      */
     fun initializeAppwrite(): Flow<Resource<String>> =
-        appwriteDataSource
-            .initializeAppwrite()
-            .logEach("Appwrite initialization")
-            .logCompletion("Appwrite initialization completed")
-            .catchToResourceError()
-            .shareHot(serviceScope)
+        flow {
+            try {
+                logger.info("initializeAppwrite --> Starting Appwrite initialization")
+
+                // Initialize Appwrite first
+                val appwriteResult =
+                    appwriteDataSource
+                        .initializeAppwrite()
+                        .logEach("Appwrite initialization")
+                        .logCompletion("Appwrite initialization completed")
+                        .catchToResourceError()
+                        .last()
+
+                when (appwriteResult) {
+                    is Resource.Success -> {
+                        logger.info("initializeAppwrite --> Appwrite initialization completed, starting Meilisearch initialization")
+
+                        // Initialize Meilisearch after Appwrite success
+                        val meilisearchResult = meilisearchDataSource.initializeMeilisearch().last()
+                        when (meilisearchResult) {
+                            is Resource.Success -> {
+                                logger.info("initializeAppwrite --> Both Appwrite and Meilisearch initialized successfully")
+                                emit(Resource.Success("Appwrite and Meilisearch initialized successfully"))
+                            }
+
+                            is Resource.Error -> {
+                                logger.warn("initializeAppwrite --> Meilisearch initialization failed: ${meilisearchResult.message}")
+                                emit(Resource.Success("Appwrite initialized successfully, but Meilisearch initialization failed"))
+                            }
+
+                            else -> {}
+                        }
+                    }
+
+                    is Resource.Error -> {
+                        logger.error("initializeAppwrite --> Appwrite initialization failed: ${appwriteResult.message}")
+                        emit(Resource.Error(appwriteResult.message, appwriteResult.exception))
+                    }
+
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                logger.error("initializeAppwrite --> Error during initialization", e)
+                emit(Resource.Error("Initialization failed: ${e.message}", e))
+            }
+        }.flowOn(Dispatchers.IO)
 
     fun getLyricById(id: String): Flow<Resource<LyricResponseDTO?>> =
         lyricRepository
@@ -183,20 +226,24 @@ class LyricService(
                 when (saveResult) {
                     is Resource.Success -> {
                         // When lyrics are successfully saved, remove from notfound_lyrics if exists
-                        logger.debug("Lyric saved successfully, checking if videoId: ${lyricRequestDTO.videoId} exists in notfound_lyrics")
+                        logger.debug(
+                            "saveLyric --> Lyric saved successfully, checking if videoId: ${lyricRequestDTO.videoId} exists in notfound_lyrics",
+                        )
 
                         try {
                             val deleteResult = notFoundLyricRepository.deleteByVideoId(lyricRequestDTO.videoId).last()
                             when (deleteResult) {
                                 is Resource.Success -> {
                                     if (deleteResult.data) {
-                                        logger.info("Removed videoId: ${lyricRequestDTO.videoId} from notfound_lyrics after adding lyrics")
+                                        logger.info(
+                                            "saveLyric --> Removed videoId: ${lyricRequestDTO.videoId} from notfound_lyrics after adding lyrics",
+                                        )
                                     }
                                 }
 
                                 is Resource.Error -> {
                                     logger.warn(
-                                        "Failed to remove videoId: ${lyricRequestDTO.videoId} from notfound_lyrics: ${deleteResult.message}",
+                                        "saveLyric --> Failed to remove videoId: ${lyricRequestDTO.videoId} from notfound_lyrics: ${deleteResult.message}",
                                     )
                                 }
 
@@ -204,9 +251,38 @@ class LyricService(
                             }
                         } catch (e: Exception) {
                             logger.warn(
-                                "Exception while removing videoId: ${lyricRequestDTO.videoId} from notfound_lyrics",
+                                "saveLyric --> Exception while removing videoId: ${lyricRequestDTO.videoId} from notfound_lyrics",
                                 e,
                             )
+                        }
+
+                        // Index the lyric in Meilisearch
+                        try {
+                            logger.debug("saveLyric --> Indexing lyric in Meilisearch with id: ${saveResult.data.id}")
+                            val searchDocument =
+                                LyricSearchDocument(
+                                    id = saveResult.data.id,
+                                    videoId = saveResult.data.videoId,
+                                    songTitle = saveResult.data.songTitle,
+                                    artistName = saveResult.data.artistName,
+                                    albumName = saveResult.data.albumName,
+                                    durationSeconds = saveResult.data.durationSeconds,
+                                )
+
+                            val indexResult = meilisearchDataSource.indexLyric(searchDocument).last()
+                            when (indexResult) {
+                                is Resource.Success -> {
+                                    logger.debug("saveLyric --> Successfully indexed lyric in Meilisearch with id: ${saveResult.data.id}")
+                                }
+
+                                is Resource.Error -> {
+                                    logger.warn("saveLyric --> Failed to index lyric in Meilisearch: ${indexResult.message}")
+                                }
+
+                                else -> {}
+                            }
+                        } catch (e: Exception) {
+                            logger.warn("saveLyric --> Exception while indexing lyric in Meilisearch", e)
                         }
 
                         emit(Resource.Success(saveResult.data.toResponseDTO()))

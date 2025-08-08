@@ -48,6 +48,9 @@ dependencies {
     // AppWrite
     implementation(libs.appwrite.sdk)
 
+    // Meilisearch
+    implementation(libs.meilisearch.sdk)
+
     implementation(libs.spring.swagger)
 
     // Rate Limiting

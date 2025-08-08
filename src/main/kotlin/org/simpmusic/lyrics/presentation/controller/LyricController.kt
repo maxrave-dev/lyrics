@@ -14,6 +14,7 @@ import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.VoteRequestDTO
 import org.simpmusic.lyrics.application.dto.response.*
 import org.simpmusic.lyrics.application.service.LyricService
+import org.simpmusic.lyrics.infrastructure.service.MeilisearchService
 import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.uitls.DocsErrorResponse
 import org.simpmusic.lyrics.uitls.DocsLyricResponseSuccess
@@ -30,9 +31,12 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/v1")
 class LyricController(
     private val lyricService: LyricService,
+    private val meilisearchService: MeilisearchService,
     @Qualifier("ioDispatcher") private val ioDispatcher: CoroutineDispatcher,
 ) {
     private val logger = LoggerFactory.getLogger(LyricController::class.java)
+
+
 
     // ========== Lyric API Endpoints ==========
     @Operation(
@@ -319,36 +323,75 @@ class LyricController(
         @RequestParam(required = false) offset: Int?,
     ): ResponseEntity<ApiResult<List<LyricResponseDTO>>> =
         withContext(ioDispatcher) {
-            logger.debug("searchLyrics --> Searching lyrics with keywords: $q, limit: $limit, offset: $offset")
-            val result = lyricService.searchLyrics(q, limit, offset).last()
-            when (result) {
-                is Resource.Success -> {
-                    logger.debug("searchLyrics --> Found ${result.data.size} lyrics for search: $q")
-                    if (result.data.isNotEmpty()) {
-                        ResponseEntity.ok(
-                            ApiResult.Success<List<LyricResponseDTO>>(
-                                data = result.data,
+            logger.debug("searchLyrics --> Searching lyrics with Meilisearch: $q, limit: $limit, offset: $offset")
+            
+            try {
+                val searchResult = meilisearchService.searchLyrics(q, limit, offset).last()
+                
+                when (searchResult) {
+                    is Resource.Success -> {
+                        logger.debug("searchLyrics --> Found ${searchResult.data.size} IDs from Meilisearch for search: $q")
+                        
+                        if (searchResult.data.isEmpty()) {
+                            val errorResponse = ErrorResponseDTO.notFound("No lyrics found for search query: $q")
+                            ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                                ApiResult.Error(
+                                    error = errorResponse,
+                                ),
+                            )
+                        } else {
+                            val lyrics = mutableListOf<LyricResponseDTO>()
+                            
+                            searchResult.data.forEach { id ->
+                                val lyricResult = lyricService.getLyricById(id).last()
+                                when (lyricResult) {
+                                    is Resource.Success -> {
+                                        lyricResult.data?.let { lyrics.add(it) }
+                                    }
+                                    is Resource.Error -> {
+                                        logger.warn("searchLyrics --> Failed to get lyric by id: $id - ${lyricResult.message}")
+                                    }
+                                    else -> {}
+                                }
+                            }
+                            
+                            logger.debug("searchLyrics --> Successfully retrieved ${lyrics.size} full lyrics for search: $q")
+                            ResponseEntity.ok(
+                                ApiResult.Success<List<LyricResponseDTO>>(
+                                    data = lyrics,
+                                ),
+                            )
+                        }
+                    }
+                    
+                    is Resource.Error -> {
+                        logger.error("searchLyrics --> Failed to search lyrics with Meilisearch: ${searchResult.message}", searchResult.exception)
+                        val errorResponse = ErrorResponseDTO.serverError("Failed to search lyrics with query: $q")
+                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                            ApiResult.Error(
+                                error = errorResponse,
                             ),
                         )
-                    } else {
-                        val errorResponse = ErrorResponseDTO.notFound("No lyrics found for search query: $q")
-                        ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    }
+                    
+                    else -> {
+                        logger.warn("searchLyrics --> Unexpected resource state for search: $q")
+                        val errorResponse = ErrorResponseDTO.serverError("Unexpected error while searching")
+                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                             ApiResult.Error(
                                 error = errorResponse,
                             ),
                         )
                     }
                 }
-
-                is Resource.Error -> {
-                    logger.error("searchLyrics --> Failed to search lyrics: ${result.message}", result.exception)
-                    val errorResponse = ErrorResponseDTO.serverError("Failed to search lyrics with query: $q")
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                        ApiResult.Error(
-                            error = errorResponse,
-                        ),
-                    )
-                }
+            } catch (e: Exception) {
+                logger.error("searchLyrics --> Exception during search: ${e.message}", e)
+                val errorResponse = ErrorResponseDTO.serverError("Failed to search lyrics with query: $q")
+                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResult.Error(
+                        error = errorResponse,
+                    ),
+                )
             }
         }
 

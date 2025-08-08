@@ -169,7 +169,6 @@ class AppwriteLyricRepository(
                         ),
                     ),
                 )
-
             limit?.let { queries.add(Query.limit(it)) }
             offset?.let { queries.add(Query.offset(it)) }
 
