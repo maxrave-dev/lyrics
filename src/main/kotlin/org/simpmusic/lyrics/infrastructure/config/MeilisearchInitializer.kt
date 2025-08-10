@@ -50,8 +50,8 @@ class MeilisearchInitializer(
                                 is Resource.Error -> {
                                     logger.error("Failed to initialize Meilisearch: ${result.message}", result.exception)
                                 }
-                                
-                                else -> {} // Loading state
+
+
                             }
                         }.onCompletion { error ->
                             if (error != null) {

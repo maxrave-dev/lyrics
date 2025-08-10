@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.withContext
 import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
@@ -14,7 +16,7 @@ import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.VoteRequestDTO
 import org.simpmusic.lyrics.application.dto.response.*
 import org.simpmusic.lyrics.application.service.LyricService
-import org.simpmusic.lyrics.infrastructure.service.MeilisearchService
+import org.simpmusic.lyrics.application.service.MeilisearchService
 import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.uitls.DocsErrorResponse
 import org.simpmusic.lyrics.uitls.DocsLyricResponseSuccess
@@ -32,7 +34,7 @@ import org.springframework.web.bind.annotation.*
 class LyricController(
     private val lyricService: LyricService,
     private val meilisearchService: MeilisearchService,
-    @Qualifier("ioDispatcher") private val ioDispatcher: CoroutineDispatcher,
+    private val ioDispatcher: CoroutineDispatcher,
 ) {
     private val logger = LoggerFactory.getLogger(LyricController::class.java)
 
@@ -331,7 +333,7 @@ class LyricController(
                 when (searchResult) {
                     is Resource.Success -> {
                         logger.debug("searchLyrics --> Found ${searchResult.data.size} IDs from Meilisearch for search: $q")
-                        
+
                         if (searchResult.data.isEmpty()) {
                             val errorResponse = ErrorResponseDTO.notFound("No lyrics found for search query: $q")
                             ResponseEntity.status(HttpStatus.NOT_FOUND).body(
@@ -341,20 +343,22 @@ class LyricController(
                             )
                         } else {
                             val lyrics = mutableListOf<LyricResponseDTO>()
-                            
-                            searchResult.data.forEach { id ->
-                                val lyricResult = lyricService.getLyricById(id).last()
-                                when (lyricResult) {
-                                    is Resource.Success -> {
-                                        lyricResult.data?.let { lyrics.add(it) }
+
+                            val tasks = searchResult.data.map { searchResult ->
+                                async {
+                                    val lyricResult = lyricService.getLyricById(searchResult.id).last()
+                                    when (lyricResult) {
+                                        is Resource.Success -> {
+                                            lyricResult.data?.let { lyrics.add(it) }
+                                        }
+                                        is Resource.Error -> {
+                                            logger.warn("searchLyrics --> Failed to get lyric by id: ${searchResult.id} - ${lyricResult.message}")
+                                        }
                                     }
-                                    is Resource.Error -> {
-                                        logger.warn("searchLyrics --> Failed to get lyric by id: $id - ${lyricResult.message}")
-                                    }
-                                    else -> {}
                                 }
                             }
-                            
+                            tasks.awaitAll()
+
                             logger.debug("searchLyrics --> Successfully retrieved ${lyrics.size} full lyrics for search: $q")
                             ResponseEntity.ok(
                                 ApiResult.Success<List<LyricResponseDTO>>(

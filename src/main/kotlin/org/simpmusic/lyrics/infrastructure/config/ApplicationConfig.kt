@@ -25,7 +25,6 @@ class ApplicationConfig {
         notFoundTranslatedLyricRepository: NotFoundTranslatedLyricRepository,
         appwriteDataSource: AppwriteDataSource,
         meilisearchDataSource: MeilisearchDataSource,
-        @Qualifier("serviceScope") serviceScope: CoroutineScope,
     ): LyricService =
         LyricService(
             lyricRepository,
@@ -34,6 +33,5 @@ class ApplicationConfig {
             notFoundTranslatedLyricRepository,
             appwriteDataSource,
             meilisearchDataSource,
-            serviceScope,
         )
 }

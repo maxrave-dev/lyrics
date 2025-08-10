@@ -9,8 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.simpmusic.lyrics.domain.model.Resource
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -60,16 +58,16 @@ class MeilisearchDataSource(
                 logger.info("Step 3: Setting up searchable attributes...")
                 // Set searchable attributes
                 index.updateSearchableAttributesSettings(
-                    arrayOf("songTitle", "artistName", "albumName", "plainLyric", "contributor"),
+                    arrayOf(
+                        $$"$id",
+                        "videoId",
+                        "songTitle",
+                        "artistName",
+                        "albumName",
+                        "durationSeconds",
+                    ),
                 )
                 logger.info("Successfully set searchable attributes")
-
-                logger.info("Step 4: Setting up filterable attributes...")
-                // Set filterable attributes
-                index.updateFilterableAttributesSettings(
-                    arrayOf("videoId", "artistName", "albumName"),
-                )
-                logger.info("Successfully set filterable attributes")
 
                 logger.info("=== Meilisearch initialization completed successfully ===")
                 "Meilisearch index initialized successfully"
@@ -103,12 +101,12 @@ class MeilisearchDataSource(
                             "videoId": "$${document.videoId}",
                             "songTitle": "$${document.songTitle}",
                             "artistName": "$${document.artistName}",
-                            "albumName": "$${document.albumName}"
-                            durationSeconds: $${document.durationSeconds},
+                            "albumName": "$${document.albumName}",
+                            "durationSeconds": $${document.durationSeconds}
                         }
                     ]
                     """.trimIndent(),
-                    "\$id",
+                    $$"$id",
                 )
 
                 logger.debug("indexLyric --> Successfully indexed lyric with id: ${document.id}")
@@ -131,11 +129,10 @@ class MeilisearchDataSource(
         query: String,
         limit: Int? = null,
         offset: Int? = null,
-        filter: String? = null,
-    ): Flow<Resource<List<String>>> =
+    ): Flow<Resource<List<LyricSearchDocument>>> =
         flow {
             runCatching {
-                logger.debug("searchLyrics --> Searching with query: $query, limit: $limit, offset: $offset, filter: $filter")
+                logger.debug("searchLyrics --> Searching with query: $query, limit: $limit, offset: $offset")
 
                 val index = client.index(indexName)
 
@@ -143,17 +140,30 @@ class MeilisearchDataSource(
                     SearchRequest(query).apply {
                         this.limit = limit ?: 20
                         this.offset = offset ?: 0
-                        filter?.let { this.filter = arrayOf(it) }
-                        this.attributesToRetrieve = arrayOf("id")
                     }
 
                 val searchResult = index.search(searchRequest)
+                logger.info("searchLyrics --> Search completed with ${searchResult.hits.size} results")
+                logger.info("searchLyrics --> Search result $searchResult")
                 val lyricIds =
                     searchResult.hits.mapNotNull { hit ->
-                        when (hit) {
-                            is JsonObject -> hit["id"]?.jsonPrimitive?.content
-                            else -> null
-                        }
+                        LyricSearchDocument(
+                            id = hit[$$"$id"].toString(),
+                            videoId = hit["videoId"].toString(),
+                            songTitle = hit["songTitle"].toString(),
+                            artistName = hit["artistName"].toString(),
+                            albumName = hit["albumName"].toString(),
+                            durationSeconds =
+                                try {
+                                    hit["durationSeconds"].toString().toFloat().toInt()
+                                } catch (e: Exception) {
+                                    logger.warn(
+                                        "searchLyrics --> Invalid durationSeconds for hit: $hit, defaulting to 0",
+                                        e,
+                                    )
+                                    0
+                                },
+                        )
                     }
 
                 logger.debug("searchLyrics --> Found ${lyricIds.size} results for query: $query")

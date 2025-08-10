@@ -2,7 +2,6 @@
 
 package org.simpmusic.lyrics.application.service
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -36,7 +35,6 @@ class LyricService(
     private val notFoundTranslatedLyricRepository: NotFoundTranslatedLyricRepository,
     private val appwriteDataSource: AppwriteDataSource,
     private val meilisearchDataSource: MeilisearchDataSource,
-    private val serviceScope: CoroutineScope,
 ) {
     private val logger = LoggerFactory.getLogger(LyricService::class.java)
 
@@ -75,7 +73,7 @@ class LyricService(
                                 emit(Resource.Success("Appwrite initialized successfully, but Meilisearch initialization failed"))
                             }
 
-                            else -> {}
+
                         }
                     }
 
@@ -84,7 +82,7 @@ class LyricService(
                         emit(Resource.Error(appwriteResult.message, appwriteResult.exception))
                     }
 
-                    else -> {}
+                    
                 }
             } catch (e: Exception) {
                 logger.error("initializeAppwrite --> Error during initialization", e)
@@ -139,9 +137,9 @@ class LyricService(
                                             logger.warn("Failed to save NotFoundLyric for videoId: $videoId - ${saveResult.message}")
                                         }
 
-                                        else -> {} // Loading state
+
                                     }
-                                } // Loading state
+                                }
                             }
 
                             // Return empty list regardless of notfound_lyrics operation result
@@ -157,7 +155,7 @@ class LyricService(
                         emit(Resource.Error(lyricsResult.message, lyricsResult.exception))
                     }
 
-                    else -> {} // Loading state
+
                 }
             } catch (e: Exception) {
                 emit(Resource.Error("Error getting lyrics for videoId: $videoId", e))
@@ -218,7 +216,7 @@ class LyricService(
                         // Continue to save if unable to check for duplicates
                     }
 
-                    else -> {} // Loading state
+
                 }
 
                 val saveResult = lyricRepository.save(lyric).last()
@@ -247,7 +245,7 @@ class LyricService(
                                     )
                                 }
 
-                                else -> {} // Loading state
+
                             }
                         } catch (e: Exception) {
                             logger.warn(
@@ -279,7 +277,7 @@ class LyricService(
                                     logger.warn("saveLyric --> Failed to index lyric in Meilisearch: ${indexResult.message}")
                                 }
 
-                                else -> {}
+
                             }
                         } catch (e: Exception) {
                             logger.warn("saveLyric --> Exception while indexing lyric in Meilisearch", e)
@@ -292,7 +290,7 @@ class LyricService(
                         emit(Resource.Error(saveResult.message, saveResult.exception))
                     }
 
-                    else -> {} // Loading state
+
                 }
             } catch (e: Exception) {
                 emit(Resource.Error("Error saving lyric", e))
@@ -326,7 +324,7 @@ class LyricService(
                         emit(Resource.Error(result.message, result.exception, result.code))
                     }
 
-                    else -> {} // Loading state
+
                 }
             } catch (e: Exception) {
                 logger.error("voteLyric --> Error processing vote: ${e.message}", e)
@@ -420,9 +418,9 @@ class LyricService(
                                         )
                                     }
 
-                                    else -> {} // Loading state
+
                                 }
-                            } // Loading state
+                            }
                         }
                     }
                 }
@@ -459,7 +457,7 @@ class LyricService(
                         // Continue to save if unable to check for duplicates
                     }
 
-                    else -> {} // Loading state
+
                 }
 
                 val saveResult = translatedLyricRepository.save(translatedLyric).last()
@@ -493,7 +491,7 @@ class LyricService(
                                     )
                                 }
 
-                                else -> {} // Loading state
+
                             }
                         } catch (e: Exception) {
                             logger.warn(
@@ -509,7 +507,7 @@ class LyricService(
                         emit(Resource.Error(saveResult.message, saveResult.exception))
                     }
 
-                    else -> {} // Loading state
+
                 }
             } catch (e: Exception) {
                 emit(Resource.Error("Error saving translated lyric", e))
@@ -545,7 +543,7 @@ class LyricService(
                         emit(Resource.Error(result.message, result.exception, result.code))
                     }
 
-                    else -> {} // Loading state
+
                 }
             } catch (e: Exception) {
                 logger.error("voteTranslatedLyric --> Error processing vote: ${e.message}", e)

@@ -42,14 +42,6 @@ class CoroutineConfig {
         CloseableCoroutineScope(SupervisorJob() + ioDispatcher)
     
     /**
-     * Service scope for service-level operations
-     */
-    @Bean
-    @Qualifier("serviceScope")
-    fun serviceScope(@Qualifier("ioDispatcher") ioDispatcher: CoroutineDispatcher): CoroutineScope = 
-        CloseableCoroutineScope(SupervisorJob() + ioDispatcher)
-    
-    /**
      * Bean post processor to prevent Spring from trying to close Kotlin's built-in dispatchers
      */
     @Bean

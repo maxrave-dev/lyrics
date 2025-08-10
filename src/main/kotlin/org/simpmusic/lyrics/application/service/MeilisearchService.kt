@@ -1,4 +1,4 @@
-package org.simpmusic.lyrics.infrastructure.service
+package org.simpmusic.lyrics.application.service
 
 import kotlinx.coroutines.flow.Flow
 import org.simpmusic.lyrics.domain.model.Resource
@@ -40,10 +40,9 @@ class MeilisearchService(
         query: String,
         limit: Int? = null,
         offset: Int? = null,
-        filter: String? = null,
-    ): Flow<Resource<List<String>>> {
+    ): Flow<Resource<List<LyricSearchDocument>>> {
         logger.debug("searchLyrics --> Searching with query: $query")
-        return meilisearchDataSource.searchLyrics(query, limit, offset, filter)
+        return meilisearchDataSource.searchLyrics(query, limit, offset)
     }
 
     /**
