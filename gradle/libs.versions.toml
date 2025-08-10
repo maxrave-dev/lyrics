@@ -1,7 +1,7 @@
 [versions]
-appversion = "0.0.2-beta2"
+appversion = "0.0.2-beta3"
 
-kotlin = "2.1.20"
+kotlin = "2.2.0"
 springBoot = "3.5.3"
 springDependencyManagement = "1.1.7"
 
@@ -13,6 +13,7 @@ swagger = "2.8.9"
 bucket4j = "0.12.10"
 jcache = "1.1.1"
 caffeine = "3.1.8"
+meilisearch = "0.11.3"
 
 [libraries]
 # Spring Boot
@@ -44,6 +45,9 @@ junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform
 
 # AppWrite
 appwrite-sdk = { group = "io.appwrite", name = "sdk-for-kotlin", version.ref = "appwrite" }
+
+# Meilisearch
+meilisearch-sdk = { group = "com.meilisearch.sdk", name = "meilisearch-java", version.ref = "meilisearch" }
 
 # Swagger
 spring-swagger = { group = "org.springdoc", name = "springdoc-openapi-starter-webmvc-ui", version.ref = "swagger" }

@@ -32,11 +32,13 @@ class AppwriteLyricRepository(
             logger.debug("findById started for id: $id")
             runCatching {
                 logger.debug("Calling databases.getDocument for id: $id")
-                databases.getDocument(
+                databases.listDocuments(
                     databaseId = databaseId,
                     collectionId = collectionId,
-                    documentId = id,
-                )
+                    queries = listOf(
+                        Query.equal($$"$id", id)
+                    )
+                ).documents.first()
             }.fold(
                 onSuccess = { document ->
                     logger.debug("Successfully found document for id: $id")
@@ -169,7 +171,6 @@ class AppwriteLyricRepository(
                         ),
                     ),
                 )
-
             limit?.let { queries.add(Query.limit(it)) }
             offset?.let { queries.add(Query.offset(it)) }
 
