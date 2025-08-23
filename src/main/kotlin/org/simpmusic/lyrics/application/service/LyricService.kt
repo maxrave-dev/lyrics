@@ -2,6 +2,7 @@
 
 package org.simpmusic.lyrics.application.service
 
+import io.sentry.Sentry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -72,8 +73,6 @@ class LyricService(
                                 logger.warn("initializeAppwrite --> Meilisearch initialization failed: ${meilisearchResult.message}")
                                 emit(Resource.Success("Appwrite initialized successfully, but Meilisearch initialization failed"))
                             }
-
-
                         }
                     }
 
@@ -81,8 +80,6 @@ class LyricService(
                         logger.error("initializeAppwrite --> Appwrite initialization failed: ${appwriteResult.message}")
                         emit(Resource.Error(appwriteResult.message, appwriteResult.exception))
                     }
-
-                    
                 }
             } catch (e: Exception) {
                 logger.error("initializeAppwrite --> Error during initialization", e)
@@ -136,8 +133,6 @@ class LyricService(
                                         is Resource.Error -> {
                                             logger.warn("Failed to save NotFoundLyric for videoId: $videoId - ${saveResult.message}")
                                         }
-
-
                                     }
                                 }
                             }
@@ -154,8 +149,6 @@ class LyricService(
                     is Resource.Error -> {
                         emit(Resource.Error(lyricsResult.message, lyricsResult.exception))
                     }
-
-
                 }
             } catch (e: Exception) {
                 emit(Resource.Error("Error getting lyrics for videoId: $videoId", e))
@@ -215,8 +208,6 @@ class LyricService(
                         logger.warn("saveLyric --> Error checking for duplicate lyric: ${existingResult.message}")
                         // Continue to save if unable to check for duplicates
                     }
-
-
                 }
 
                 val saveResult = lyricRepository.save(lyric).last()
@@ -244,8 +235,6 @@ class LyricService(
                                         "saveLyric --> Failed to remove videoId: ${lyricRequestDTO.videoId} from notfound_lyrics: ${deleteResult.message}",
                                     )
                                 }
-
-
                             }
                         } catch (e: Exception) {
                             logger.warn(
@@ -276,8 +265,6 @@ class LyricService(
                                 is Resource.Error -> {
                                     logger.warn("saveLyric --> Failed to index lyric in Meilisearch: ${indexResult.message}")
                                 }
-
-
                             }
                         } catch (e: Exception) {
                             logger.warn("saveLyric --> Exception while indexing lyric in Meilisearch", e)
@@ -289,8 +276,6 @@ class LyricService(
                     is Resource.Error -> {
                         emit(Resource.Error(saveResult.message, saveResult.exception))
                     }
-
-
                 }
             } catch (e: Exception) {
                 emit(Resource.Error("Error saving lyric", e))
@@ -323,8 +308,6 @@ class LyricService(
                         logger.error("voteLyric --> Failed to update vote for lyric id: ${voteDTO.id}: ${result.message}")
                         emit(Resource.Error(result.message, result.exception, result.code))
                     }
-
-
                 }
             } catch (e: Exception) {
                 logger.error("voteLyric --> Error processing vote: ${e.message}", e)
@@ -417,8 +400,6 @@ class LyricService(
                                             "getTranslatedLyricByVideoIdAndLanguage --> Failed to save NotFoundTranslatedLyric for videoId: $videoId, language: $language - ${saveResult.message}",
                                         )
                                     }
-
-
                                 }
                             }
                         }
@@ -456,8 +437,6 @@ class LyricService(
                         logger.warn("saveTranslatedLyric --> Error checking for duplicate translated lyric: ${existingResult.message}")
                         // Continue to save if unable to check for duplicates
                     }
-
-
                 }
 
                 val saveResult = translatedLyricRepository.save(translatedLyric).last()
@@ -490,8 +469,6 @@ class LyricService(
                                         "saveTranslatedLyric --> Failed to remove videoId: ${translatedLyricRequestDTO.videoId}, language: ${translatedLyricRequestDTO.language} from notfound_translated_lyrics: ${deleteResult.message}",
                                     )
                                 }
-
-
                             }
                         } catch (e: Exception) {
                             logger.warn(
@@ -506,8 +483,6 @@ class LyricService(
                     is Resource.Error -> {
                         emit(Resource.Error(saveResult.message, saveResult.exception))
                     }
-
-
                 }
             } catch (e: Exception) {
                 emit(Resource.Error("Error saving translated lyric", e))
@@ -542,8 +517,6 @@ class LyricService(
                         )
                         emit(Resource.Error(result.message, result.exception, result.code))
                     }
-
-
                 }
             } catch (e: Exception) {
                 logger.error("voteTranslatedLyric --> Error processing vote: ${e.message}", e)

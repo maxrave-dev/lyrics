@@ -15,6 +15,10 @@ the community, SimpMusic app users, and through automated crawling of other web 
 https://api-lyrics.simpmusic.org/v1
 ```
 
+### Web client:
+
+- [https://lyrics.simpmusic.org/](https://lyrics.simpmusic.org/)
+
 [![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/) [![Spring Boot](https://img.shields.io/badge/spring%20boot-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot) [![Appwrite](https://img.shields.io/badge/appwrite-%23FD366E.svg?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
 
 ## Features
@@ -40,11 +44,16 @@ git clone https://github.com/your-username/lyrics-api.git
 cd lyrics-api
 ```
 
-### 2. Host your own Meilisearch or use Cloud
+### 2. Set up Sentry (Optional)
+
+- If you want to use Sentry for error tracking, create a Sentry account and get your DSN.
+
+### 3. Host your own Meilisearch or use Cloud
 
 - Note your Meilisearch URL and Master Key
+- Using Meilisearch for super fast search capabilities
 
-### 2. Set Up Appwrite
+### 4. Set Up Appwrite
 
 1. Create an [Appwrite](https://appwrite.io/) account
 2. Create a new project
@@ -55,11 +64,11 @@ cd lyrics-api
     - ADMIN_IPS: List of IPs allowed to perform admin actions without Rate Limiting
     - HMAC_SECRET: A secret key for HMAC authentication (should be kept secret)
 
-### 3. Configure Environment
+### 5. Configure Environment
 
 Create `.env` following the `.env.example`
 
-### 4. Build the Application
+### 6. Build the Application
 
 ```bash
 # Clean and build
@@ -72,7 +81,7 @@ Create `.env` following the `.env.example`
 ./gradlew bootJar
 ```
 
-### 5. Run the Application
+### 7. Run the Application
 
 ```bash
 # Development mode
@@ -226,9 +235,9 @@ curl -X POST "http://localhost:8080/v1" \
 - [x] Rate limiting
 - [x] Paginated search
 - [x] Standardized API response format
-- [ ] Input data
+- [x] Input data
 - [x] Public server
-- [ ] Frontend integration
+- [x] Frontend integration
 - [ ] Automated find not-found lyrics
 - [ ] Automated remove negative votes lyrics
 

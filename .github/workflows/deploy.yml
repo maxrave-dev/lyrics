@@ -36,6 +36,7 @@ jobs:
           HMAC_SECRET: ${{ secrets.HMAC_SECRET }}
           MEILISEARCH_HOST: ${{ secrets.MEILISEARCH_HOST }}
           MEILISEARCH_MASTER_KEY: ${{ secrets.MEILISEARCH_MASTER_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           echo 'APPWRITE_ENDPOINT=${{ secrets.APPWRITE_ENDPOINT }}' > ./.env
           echo "APPWRITE_PROJECT=${{ secrets.APPWRITE_PROJECT }}" >> ./.env
@@ -45,6 +46,7 @@ jobs:
           echo "HMAC_SECRET=${{ secrets.HMAC_SECRET }}" >> ./.env
           echo "MEILISEARCH_HOST=${{ secrets.MEILISEARCH_HOST }}" >> ./.env
           echo "MEILISEARCH_MASTER_KEY=${{ secrets.MEILISEARCH_MASTER_KEY }}" >> ./.env
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> ./.env
 
       - name: Setup SSH key
         env:
