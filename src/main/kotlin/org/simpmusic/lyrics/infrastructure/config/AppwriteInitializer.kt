@@ -1,5 +1,6 @@
 package org.simpmusic.lyrics.infrastructure.config
 
+import io.sentry.Sentry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
@@ -10,6 +11,7 @@ import org.simpmusic.lyrics.application.service.LyricService
 import org.simpmusic.lyrics.domain.model.Resource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,7 +24,7 @@ import org.springframework.core.env.Environment
 class AppwriteInitializer(
     private val lyricService: LyricService,
     private val environment: Environment,
-    @Qualifier("applicationScope") private val applicationScope: CoroutineScope,
+    @param:Qualifier("applicationScope") private val applicationScope: CoroutineScope,
 ) {
     private val logger = LoggerFactory.getLogger(AppwriteInitializer::class.java)
 

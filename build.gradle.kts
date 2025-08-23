@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.spring)
@@ -21,11 +19,8 @@ kotlin {
     jvmToolchain(17)
     compilerOptions {
         freeCompilerArgs.add("-Xwhen-guards")
+        freeCompilerArgs.addAll("-Xjsr305=strict")
     }
-}
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {
@@ -62,12 +57,11 @@ dependencies {
 
     // Validation
     implementation(libs.spring.boot.starter.validation)
-}
 
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.addAll("-Xjsr305=strict")
-    }
+    // Sentry
+    implementation(platform(libs.sentry.bom))
+    implementation(libs.sentry)
+    implementation(libs.sentry.logback)
 }
 
 tasks.withType<Test> {

@@ -31,6 +31,7 @@ jobs:
           APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
           ADMIN_IPS: ${{ secrets.ADMIN_IPS }}
           HMAC_SECRET: ${{ secrets.HMAC_SECRET }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           echo 'APPWRITE_ENDPOINT=${{ secrets.APPWRITE_ENDPOINT }}' > ./.env
           echo "APPWRITE_PROJECT=${{ secrets.APPWRITE_PROJECT }}" >> ./.env
@@ -38,6 +39,7 @@ jobs:
           echo "APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}" >> ./.env
           echo "ADMIN_IPS=${{ secrets.ADMIN_IPS }}" >> ./.env
           echo "HMAC_SECRET=${{ secrets.HMAC_SECRET }}" >> ./.env
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> ./.env
 
       - name: Setup SSH key
         env:
