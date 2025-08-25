@@ -1,5 +1,5 @@
 [versions]
-appversion = "0.0.2-beta4"
+appversion = "0.0.2-beta5"
 
 kotlin = "2.2.0"
 springBoot = "3.5.3"
