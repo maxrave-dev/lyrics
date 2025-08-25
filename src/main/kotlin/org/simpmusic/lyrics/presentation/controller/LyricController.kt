@@ -38,8 +38,6 @@ class LyricController(
 ) {
     private val logger = LoggerFactory.getLogger(LyricController::class.java)
 
-
-
     // ========== Lyric API Endpoints ==========
     @Operation(
         summary = "Get Lyrics by Video ID",
@@ -326,10 +324,10 @@ class LyricController(
     ): ResponseEntity<ApiResult<List<LyricResponseDTO>>> =
         withContext(ioDispatcher) {
             logger.debug("searchLyrics --> Searching lyrics with Meilisearch: $q, limit: $limit, offset: $offset")
-            
+
             try {
                 val searchResult = meilisearchService.searchLyrics(q, limit, offset).last()
-                
+
                 when (searchResult) {
                     is Resource.Success -> {
                         logger.debug("searchLyrics --> Found ${searchResult.data.size} IDs from Meilisearch for search: $q")
@@ -344,19 +342,23 @@ class LyricController(
                         } else {
                             val lyrics = mutableListOf<LyricResponseDTO>()
 
-                            val tasks = searchResult.data.map { searchResult ->
-                                async {
-                                    val lyricResult = lyricService.getLyricById(searchResult.id).last()
-                                    when (lyricResult) {
-                                        is Resource.Success -> {
-                                            lyricResult.data?.let { lyrics.add(it) }
-                                        }
-                                        is Resource.Error -> {
-                                            logger.warn("searchLyrics --> Failed to get lyric by id: ${searchResult.id} - ${lyricResult.message}")
+                            val tasks =
+                                searchResult.data.map { searchResult ->
+                                    async {
+                                        val lyricResult = lyricService.getLyricById(searchResult.id).last()
+                                        when (lyricResult) {
+                                            is Resource.Success -> {
+                                                lyricResult.data?.let { lyrics.add(it) }
+                                            }
+
+                                            is Resource.Error -> {
+                                                logger.warn(
+                                                    "searchLyrics --> Failed to get lyric by id: ${searchResult.id} - ${lyricResult.message}",
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
                             tasks.awaitAll()
 
                             logger.debug("searchLyrics --> Successfully retrieved ${lyrics.size} full lyrics for search: $q")
@@ -367,9 +369,12 @@ class LyricController(
                             )
                         }
                     }
-                    
+
                     is Resource.Error -> {
-                        logger.error("searchLyrics --> Failed to search lyrics with Meilisearch: ${searchResult.message}", searchResult.exception)
+                        logger.error(
+                            "searchLyrics --> Failed to search lyrics with Meilisearch: ${searchResult.message}",
+                            searchResult.exception,
+                        )
                         val errorResponse = ErrorResponseDTO.serverError("Failed to search lyrics with query: $q")
                         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                             ApiResult.Error(
@@ -377,7 +382,7 @@ class LyricController(
                             ),
                         )
                     }
-                    
+
                     else -> {
                         logger.warn("searchLyrics --> Unexpected resource state for search: $q")
                         val errorResponse = ErrorResponseDTO.serverError("Unexpected error while searching")
