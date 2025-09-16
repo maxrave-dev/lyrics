@@ -2,20 +2,18 @@
 
 package org.simpmusic.lyrics.application.service
 
-import io.sentry.Sentry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.last
-import org.simpmusic.lyrics.application.dto.request.*
-import org.simpmusic.lyrics.application.dto.response.*
-import org.simpmusic.lyrics.domain.model.NotFoundLyric
-import org.simpmusic.lyrics.domain.model.NotFoundTranslatedLyric
+import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
+import org.simpmusic.lyrics.application.dto.request.VoteRequestDTO
+import org.simpmusic.lyrics.application.dto.response.LyricResponseDTO
+import org.simpmusic.lyrics.application.dto.response.TranslatedLyricResponseDTO
 import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.domain.repository.LyricRepository
-import org.simpmusic.lyrics.domain.repository.NotFoundLyricRepository
-import org.simpmusic.lyrics.domain.repository.NotFoundTranslatedLyricRepository
 import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
 import org.simpmusic.lyrics.extensions.*
 import org.simpmusic.lyrics.infrastructure.datasource.AppwriteDataSource
@@ -23,7 +21,6 @@ import org.simpmusic.lyrics.infrastructure.datasource.LyricSearchDocument
 import org.simpmusic.lyrics.infrastructure.datasource.MeilisearchDataSource
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 /**
  * Application service implementing lyrics use cases
@@ -32,8 +29,6 @@ import java.time.LocalDateTime
 class LyricService(
     private val lyricRepository: LyricRepository,
     private val translatedLyricRepository: TranslatedLyricRepository,
-    private val notFoundLyricRepository: NotFoundLyricRepository,
-    private val notFoundTranslatedLyricRepository: NotFoundTranslatedLyricRepository,
     private val appwriteDataSource: AppwriteDataSource,
     private val meilisearchDataSource: MeilisearchDataSource,
 ) {
@@ -107,36 +102,7 @@ class LyricService(
                     is Resource.Success -> {
                         if (lyricsResult.data.isEmpty()) {
                             // No lyrics found, check if already in notfound_lyrics
-                            logger.debug("No lyrics found for videoId: $videoId, checking notfound_lyrics...")
-
-                            val notFoundResult = notFoundLyricRepository.findByVideoId(videoId).last()
-                            when (notFoundResult) {
-                                is Resource.Success if (notFoundResult.data != null) -> {
-                                    logger.debug("VideoId: $videoId already exists in notfound_lyrics")
-                                }
-
-                                else -> {
-                                    logger.info("Adding videoId: $videoId to notfound_lyrics")
-                                    val notFoundLyric =
-                                        NotFoundLyric(
-                                            videoId = videoId,
-                                            addedDate = LocalDateTime.now(),
-                                        )
-
-                                    // Save to notfound_lyrics
-                                    val saveResult = notFoundLyricRepository.save(notFoundLyric).last()
-                                    when (saveResult) {
-                                        is Resource.Success -> {
-                                            logger.info("Successfully saved NotFoundLyric for videoId: $videoId")
-                                        }
-
-                                        is Resource.Error -> {
-                                            logger.warn("Failed to save NotFoundLyric for videoId: $videoId - ${saveResult.message}")
-                                        }
-                                    }
-                                }
-                            }
-
+                            logger.debug("No lyrics found for videoId: $videoId")
                             // Return empty list regardless of notfound_lyrics operation result
                             emit(Resource.Success(emptyList<LyricResponseDTO>()))
                         } else {
@@ -218,30 +184,6 @@ class LyricService(
                         logger.debug(
                             "saveLyric --> Lyric saved successfully, checking if videoId: ${lyricRequestDTO.videoId} exists in notfound_lyrics",
                         )
-
-                        try {
-                            val deleteResult = notFoundLyricRepository.deleteByVideoId(lyricRequestDTO.videoId).last()
-                            when (deleteResult) {
-                                is Resource.Success -> {
-                                    if (deleteResult.data) {
-                                        logger.info(
-                                            "saveLyric --> Removed videoId: ${lyricRequestDTO.videoId} from notfound_lyrics after adding lyrics",
-                                        )
-                                    }
-                                }
-
-                                is Resource.Error -> {
-                                    logger.warn(
-                                        "saveLyric --> Failed to remove videoId: ${lyricRequestDTO.videoId} from notfound_lyrics: ${deleteResult.message}",
-                                    )
-                                }
-                            }
-                        } catch (e: Exception) {
-                            logger.warn(
-                                "saveLyric --> Exception while removing videoId: ${lyricRequestDTO.videoId} from notfound_lyrics",
-                                e,
-                            )
-                        }
 
                         // Index the lyric in Meilisearch
                         try {
@@ -361,48 +303,7 @@ class LyricService(
 
                     else -> {
                         // No translated lyric found, check if already in notfound_translated_lyrics
-                        logger.debug(
-                            "getTranslatedLyricByVideoIdAndLanguage --> No translated lyric found for videoId: $videoId, language: $language, checking notfound_translated_lyrics...",
-                        )
-
-                        val sha256hash = (videoId + language).sha256()
-                        val notFoundResult = notFoundTranslatedLyricRepository.findBySha256Hash(sha256hash).last()
-                        when (notFoundResult) {
-                            is Resource.Success if (notFoundResult.data != null) -> {
-                                logger.debug(
-                                    "getTranslatedLyricByVideoIdAndLanguage --> VideoId: $videoId, language: $language already exists in notfound_translated_lyrics",
-                                )
-                            }
-
-                            else -> {
-                                logger.info(
-                                    "getTranslatedLyricByVideoIdAndLanguage --> Adding videoId: $videoId, language: $language to notfound_translated_lyrics",
-                                )
-                                val notFoundTranslatedLyric =
-                                    NotFoundTranslatedLyric(
-                                        videoId = videoId,
-                                        translationLanguage = language,
-                                        addedDate = LocalDateTime.now(),
-                                        sha256hash = sha256hash,
-                                    )
-
-                                // Save to notfound_translated_lyrics
-                                val saveResult = notFoundTranslatedLyricRepository.save(notFoundTranslatedLyric).last()
-                                when (saveResult) {
-                                    is Resource.Success -> {
-                                        logger.info(
-                                            "getTranslatedLyricByVideoIdAndLanguage --> Successfully saved NotFoundTranslatedLyric for videoId: $videoId, language: $language",
-                                        )
-                                    }
-
-                                    is Resource.Error -> {
-                                        logger.warn(
-                                            "getTranslatedLyricByVideoIdAndLanguage --> Failed to save NotFoundTranslatedLyric for videoId: $videoId, language: $language - ${saveResult.message}",
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        emit(Resource.Error("No translated lyric found for videoId: $videoId, language: $language"))
                     }
                 }
             } catch (e: Exception) {
@@ -444,39 +345,6 @@ class LyricService(
                 when (saveResult) {
                     is Resource.Success -> {
                         // When translated lyric is successfully saved, remove from notfound_translated_lyrics if exists
-                        logger.debug(
-                            "saveTranslatedLyric --> Translated lyric saved successfully, checking if videoId: ${translatedLyricRequestDTO.videoId}, language: ${translatedLyricRequestDTO.language} exists in notfound_translated_lyrics",
-                        )
-
-                        try {
-                            val deleteResult =
-                                notFoundTranslatedLyricRepository
-                                    .deleteByVideoIdAndLanguage(
-                                        translatedLyricRequestDTO.videoId,
-                                        translatedLyricRequestDTO.language,
-                                    ).last()
-                            when (deleteResult) {
-                                is Resource.Success -> {
-                                    if (deleteResult.data) {
-                                        logger.info(
-                                            "saveTranslatedLyric --> Removed videoId: ${translatedLyricRequestDTO.videoId}, language: ${translatedLyricRequestDTO.language} from notfound_translated_lyrics after adding translated lyric",
-                                        )
-                                    }
-                                }
-
-                                is Resource.Error -> {
-                                    logger.warn(
-                                        "saveTranslatedLyric --> Failed to remove videoId: ${translatedLyricRequestDTO.videoId}, language: ${translatedLyricRequestDTO.language} from notfound_translated_lyrics: ${deleteResult.message}",
-                                    )
-                                }
-                            }
-                        } catch (e: Exception) {
-                            logger.warn(
-                                "saveTranslatedLyric --> Exception while removing videoId: ${translatedLyricRequestDTO.videoId}, language: ${translatedLyricRequestDTO.language} from notfound_translated_lyrics",
-                                e,
-                            )
-                        }
-
                         emit(Resource.Success(saveResult.data.toResponseDTO()))
                     }
 
@@ -523,22 +391,4 @@ class LyricService(
                 emit(Resource.Error("Failed to process vote: ${e.message}", e))
             }
         }.flowOn(Dispatchers.IO)
-
-    fun getAllNotFoundLyrics(
-        limit: Int? = null,
-        offset: Int? = null,
-    ): Flow<Resource<List<NotFoundLyricResponseDTO>>> =
-        notFoundLyricRepository
-            .findAllOrderedByDate(limit, offset)
-            .mapSuccess { notFoundLyrics -> notFoundLyrics.map { it.toResponseDTO() } }
-            .catchToResourceError()
-
-    fun getAllNotFoundTranslatedLyrics(
-        limit: Int? = null,
-        offset: Int? = null,
-    ): Flow<Resource<List<NotFoundTranslatedLyricResponseDTO>>> =
-        notFoundTranslatedLyricRepository
-            .findAllOrderedByDate(limit, offset)
-            .mapSuccess { notFoundTranslatedLyrics -> notFoundTranslatedLyrics.map { it.toResponseDTO() } }
-            .catchToResourceError()
 }

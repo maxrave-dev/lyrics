@@ -1,6 +1,6 @@
 # SimpMusic Lyrics
 
-A robust and scalable RESTful API service for managing song lyrics, translations, and not-found records. Built with
+A robust and scalable RESTful API service for managing song lyrics, translations records. Built with
 Kotlin, Spring Boot, Appwrite database and Meilisearch for searching, featuring advanced duplicate detection and clean
 architecture patterns.
 
@@ -29,7 +29,6 @@ https://api-lyrics.simpmusic.org/v1
 - **Super Fast Search**: Powered by Meilisearch for quick full-text search
 - **Multi-language Support**: Handle translated lyrics in multiple languages
 - **Advanced Search**: Search by song title, artist name, or full-text content
-- **Not-Found Tracking**: Track videos without available lyrics
 - **Duplicate Detection**: SHA256-based content deduplication
 - **Real-time Processing**: Asynchronous operations with Kotlin Coroutines
 - **Standardized API Responses**: Consistent response format with type-safe handling of success, error, and processing
@@ -97,8 +96,6 @@ The application automatically creates required collections:
 
 - `lyrics` - Main lyrics collection
 - `translated_lyrics` - Translated lyrics collection
-- `notfound_lyrics` - Not found tracking collection
-- `notfound_translated_lyrics` - Not found translation collection
 
 ## API Documentation
 
@@ -238,7 +235,6 @@ curl -X POST "http://localhost:8080/v1" \
 - [x] Input data
 - [x] Public server
 - [x] Frontend integration
-- [ ] Automated find not-found lyrics
 - [ ] Automated remove negative votes lyrics
 
 ## License
