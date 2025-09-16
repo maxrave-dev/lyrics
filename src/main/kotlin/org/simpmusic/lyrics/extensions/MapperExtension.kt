@@ -3,16 +3,10 @@ package org.simpmusic.lyrics.extensions
 import io.appwrite.ID
 import io.appwrite.models.Document
 import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
-import org.simpmusic.lyrics.application.dto.request.NotFoundLyricRequestDTO
-import org.simpmusic.lyrics.application.dto.request.NotFoundTranslatedLyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
 import org.simpmusic.lyrics.application.dto.response.LyricResponseDTO
-import org.simpmusic.lyrics.application.dto.response.NotFoundLyricResponseDTO
-import org.simpmusic.lyrics.application.dto.response.NotFoundTranslatedLyricResponseDTO
 import org.simpmusic.lyrics.application.dto.response.TranslatedLyricResponseDTO
 import org.simpmusic.lyrics.domain.model.Lyric
-import org.simpmusic.lyrics.domain.model.NotFoundLyric
-import org.simpmusic.lyrics.domain.model.NotFoundTranslatedLyric
 import org.simpmusic.lyrics.domain.model.TranslatedLyric
 
 fun Lyric.toResponseDTO(): LyricResponseDTO =
@@ -67,35 +61,6 @@ fun TranslatedLyricRequestDTO.toEntity(): TranslatedLyric =
         vote = vote,
         contributor = contributor,
         contributorEmail = contributorEmail,
-    )
-
-fun NotFoundLyric.toResponseDTO(): NotFoundLyricResponseDTO =
-    NotFoundLyricResponseDTO(
-        id = videoId,
-        videoId = videoId,
-        addedDate = addedDate,
-    )
-
-fun NotFoundLyricRequestDTO.toEntity(): NotFoundLyric =
-    NotFoundLyric(
-        videoId = videoId,
-        addedDate = addedDate,
-    )
-
-fun NotFoundTranslatedLyric.toResponseDTO(): NotFoundTranslatedLyricResponseDTO =
-    NotFoundTranslatedLyricResponseDTO(
-        id = sha256hash,
-        videoId = videoId,
-        translationLanguage = translationLanguage,
-        addedDate = addedDate
-    )
-
-fun NotFoundTranslatedLyricRequestDTO.toEntity(): NotFoundTranslatedLyric =
-    NotFoundTranslatedLyric(
-        videoId = videoId,
-        translationLanguage = translationLanguage,
-        addedDate = addedDate,
-        sha256hash = getUniqueId(),
     )
 
 fun documentToTranslatedLyric(document: Document<Map<String, Any>>): TranslatedLyric {

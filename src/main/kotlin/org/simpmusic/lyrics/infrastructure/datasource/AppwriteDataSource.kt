@@ -5,16 +5,12 @@ import io.appwrite.exceptions.AppwriteException
 import io.appwrite.services.Databases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import org.simpmusic.lyrics.domain.model.Resource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import kotlin.reflect.full.memberProperties
 
 /**
  * Data source for handling Appwrite-specific operations
@@ -25,8 +21,6 @@ class AppwriteDataSource(
     @Qualifier("databaseId") private val databaseId: String,
     @Qualifier("lyricsCollectionId") private val lyricsCollectionId: String,
     @Qualifier("translatedLyricsCollectionId") private val translatedLyricsCollectionId: String,
-    @Qualifier("notFoundLyricsCollectionId") private val notFoundLyricsCollectionId: String,
-    @Qualifier("notFoundTranslatedLyricsCollectionId") private val notFoundTranslatedLyricsCollectionId: String,
     private val appwriteCollectionInitializer: AppwriteCollectionInitializer,
 ) {
     private val logger = LoggerFactory.getLogger(AppwriteDataSource::class.java)
@@ -130,76 +124,6 @@ class AppwriteDataSource(
                         throw e
                     }
                 }
-
-                // Check and create notfound_lyrics collection
-                logger.info("Step 5: Checking if notfound_lyrics collection exists: $notFoundLyricsCollectionId")
-                try {
-                    databases.getCollection(databaseId, notFoundLyricsCollectionId)
-                    logger.info("Collection $notFoundLyricsCollectionId already exists")
-                } catch (e: AppwriteException) {
-                    if (e.code == 404) {
-                        logger.info("Collection $notFoundLyricsCollectionId doesn't exist, creating...")
-                        databases.createCollection(
-                            databaseId = databaseId,
-                            collectionId = notFoundLyricsCollectionId,
-                            name = "NotFoundLyrics",
-                        )
-                        logger.info("Successfully created collection $notFoundLyricsCollectionId")
-
-                        // Create attributes for notfound_lyrics collection
-                        appwriteCollectionInitializer.createNotFoundLyricsCollectionAttributes().collect { result ->
-                            when (result) {
-                                is Resource.Success -> {
-                                    logger.info("Successfully created all notfound_lyrics attributes")
-                                }
-
-                                is Resource.Error -> {
-                                    logger.error("Failed to create notfound_lyrics attributes: ${result.message}")
-                                    throw Exception(result.message, result.exception)
-                                }
-                            }
-                        }
-                    } else {
-                        logger.error("Error checking notfound_lyrics collection: ${e.message}")
-                        throw e
-                    }
-                }
-
-                logger.info("Step 6: Checking if notfound_translated_lyrics collection exists: $notFoundTranslatedLyricsCollectionId")
-                try {
-                    databases.getCollection(databaseId, notFoundTranslatedLyricsCollectionId)
-                    logger.info("Collection $notFoundTranslatedLyricsCollectionId already exists")
-                } catch (e: AppwriteException) {
-                    if (e.code == 404) {
-                        logger.info("Collection $notFoundTranslatedLyricsCollectionId doesn't exist, creating...")
-                        databases.createCollection(
-                            databaseId = databaseId,
-                            collectionId = notFoundTranslatedLyricsCollectionId,
-                            name = "NotFoundTranslatedLyrics",
-                        )
-                        logger.info("Successfully created collection $notFoundTranslatedLyricsCollectionId")
-
-                        // Create attributes for notfound_translated_lyrics collection
-                        appwriteCollectionInitializer
-                            .createNotFoundTranslatedLyricsCollectionAttributes()
-                            .collect { result ->
-                                when (result) {
-                                    is Resource.Success -> {
-                                        logger.info("Successfully created all notfound_translated_lyrics attributes")
-                                    }
-
-                                    is Resource.Error -> {
-                                        logger.error("Failed to create notfound_translated_lyrics attributes: ${result.message}")
-                                        throw Exception(result.message, result.exception)
-                                    }
-                                }
-                            }
-                    } else {
-                        logger.error("Error checking notfound_translated_lyrics collection: ${e.message}")
-                        throw e
-                    }
-                }
-
                 logger.info("Database and all collections setup completed successfully")
                 "Appwrite initialized successfully"
             }.fold(
