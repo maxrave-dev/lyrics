@@ -14,17 +14,15 @@ import kotlinx.coroutines.withContext
 import org.simpmusic.lyrics.application.dto.request.LyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.TranslatedLyricRequestDTO
 import org.simpmusic.lyrics.application.dto.request.VoteRequestDTO
-import org.simpmusic.lyrics.application.dto.response.*
+import org.simpmusic.lyrics.application.dto.response.ApiResult
+import org.simpmusic.lyrics.application.dto.response.ErrorResponseDTO
+import org.simpmusic.lyrics.application.dto.response.LyricResponseDTO
+import org.simpmusic.lyrics.application.dto.response.TranslatedLyricResponseDTO
 import org.simpmusic.lyrics.application.service.LyricService
 import org.simpmusic.lyrics.application.service.MeilisearchService
 import org.simpmusic.lyrics.domain.model.Resource
-import org.simpmusic.lyrics.uitls.DocsErrorResponse
-import org.simpmusic.lyrics.uitls.DocsLyricResponseSuccess
-import org.simpmusic.lyrics.uitls.DocsLyricsListResponseSuccess
-import org.simpmusic.lyrics.uitls.DocsTranslatedLyricResponseSuccess
-import org.simpmusic.lyrics.uitls.DocsTranslatedLyricsListResponseSuccess
+import org.simpmusic.lyrics.uitls.*
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -198,87 +196,6 @@ class LyricController(
         }
 
     @Operation(
-        summary = "Search Lyrics by Artist",
-        description = "Searches for lyrics by artist name with optional pagination using limit and offset parameters.",
-        tags = ["Lyrics"],
-        operationId = "getLyricsByArtist",
-        responses = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Successfully retrieved lyrics by the artist",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = DocsLyricsListResponseSuccess::class),
-                    ),
-                ],
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "No lyrics found for the given artist",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = DocsErrorResponse::class),
-                    ),
-                ],
-            ),
-            ApiResponse(
-                responseCode = "500",
-                description = "Internal server error occurred while searching lyrics",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = DocsErrorResponse::class),
-                    ),
-                ],
-            ),
-        ],
-    )
-    @GetMapping("/search/artist")
-    suspend fun getLyricsByArtist(
-        @RequestParam artist: String,
-        @RequestParam(required = false) limit: Int?,
-        @RequestParam(required = false) offset: Int?,
-    ): ResponseEntity<ApiResult<List<LyricResponseDTO>>> =
-        withContext(ioDispatcher) {
-            logger.debug("getLyricsByArtist --> Searching lyrics by artist: $artist, limit: $limit, offset: $offset")
-            val result = lyricService.getLyricsByArtist(artist, limit, offset).last()
-            when (result) {
-                is Resource.Success -> {
-                    logger.debug("getLyricsByArtist --> Found ${result.data.size} lyrics for artist: $artist")
-                    if (result.data.isNotEmpty()) {
-                        ResponseEntity.ok(
-                            ApiResult.Success<List<LyricResponseDTO>>(
-                                data = result.data,
-                            ),
-                        )
-                    } else {
-                        val errorResponse = ErrorResponseDTO.notFound("Lyrics not found for artist: $artist")
-                        ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                            ApiResult.Error(
-                                error = errorResponse,
-                            ),
-                        )
-                    }
-                }
-
-                is Resource.Error -> {
-                    logger.error(
-                        "getLyricsByArtist --> Failed to get lyrics by artist: ${result.message}",
-                        result.exception,
-                    )
-                    val errorResponse = ErrorResponseDTO.serverError("Failed to get lyrics by artist: $artist")
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                        ApiResult.Error(
-                            error = errorResponse,
-                        ),
-                    )
-                }
-            }
-        }
-
-    @Operation(
         summary = "Search Lyrics",
         description = "Performs a general search across lyrics content with optional pagination using limit and offset parameters.",
         tags = ["Lyrics"],
@@ -376,16 +293,6 @@ class LyricController(
                             searchResult.exception,
                         )
                         val errorResponse = ErrorResponseDTO.serverError("Failed to search lyrics with query: $q")
-                        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                            ApiResult.Error(
-                                error = errorResponse,
-                            ),
-                        )
-                    }
-
-                    else -> {
-                        logger.warn("searchLyrics --> Unexpected resource state for search: $q")
-                        val errorResponse = ErrorResponseDTO.serverError("Unexpected error while searching")
                         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                             ApiResult.Error(
                                 error = errorResponse,

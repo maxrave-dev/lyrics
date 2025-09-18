@@ -28,20 +28,16 @@ jobs:
 
       - name: Write .env
         env:
-          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
-          APPWRITE_PROJECT: ${{ secrets.APPWRITE_PROJECT }}
-          APPWRITE_DATABASE: ${{ secrets.APPWRITE_DATABASE }}
-          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
           ADMIN_IPS: ${{ secrets.ADMIN_IPS }}
           HMAC_SECRET: ${{ secrets.HMAC_SECRET }}
           MEILISEARCH_HOST: ${{ secrets.MEILISEARCH_HOST }}
           MEILISEARCH_MASTER_KEY: ${{ secrets.MEILISEARCH_MASTER_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
-          echo 'APPWRITE_ENDPOINT=${{ secrets.APPWRITE_ENDPOINT }}' > ./.env
-          echo "APPWRITE_PROJECT=${{ secrets.APPWRITE_PROJECT }}" >> ./.env
-          echo "APPWRITE_DATABASE=${{ secrets.APPWRITE_DATABASE }}" >> ./.env
-          echo "APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}" >> ./.env
+          echo 'MONGODB_URI=${{ secrets.MONGODB_URI }}' > ./.env
+          echo "MONGODB_DATABASE=${{ secrets.MONGODB_DATABASE }}" >> ./.env
           echo "ADMIN_IPS=${{ secrets.ADMIN_IPS }}" >> ./.env
           echo "HMAC_SECRET=${{ secrets.HMAC_SECRET }}" >> ./.env
           echo "MEILISEARCH_HOST=${{ secrets.MEILISEARCH_HOST }}" >> ./.env

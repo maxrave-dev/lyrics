@@ -1,5 +1,5 @@
 [versions]
-appversion = "0.0.3-beta1"
+appversion = "0.0.4-beta1"
 
 kotlin = "2.2.0"
 springBoot = "3.5.3"
@@ -7,7 +7,6 @@ springDependencyManagement = "1.1.7"
 
 # User defined properties
 coroutines = "1.10.2"
-appwrite = "9.0.0"
 kotlinxSerializationJson = "1.8.1"
 swagger = "2.8.9"
 bucket4j = "0.12.10"
@@ -45,8 +44,9 @@ spring-security-test = { group = "org.springframework.security", name = "spring-
 # JUnit
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
 
-# AppWrite
-appwrite-sdk = { group = "io.appwrite", name = "sdk-for-kotlin", version.ref = "appwrite" }
+
+# MongoDB
+spring-boot-starter-data-mongodb = { group = "org.springframework.boot", name = "spring-boot-starter-data-mongodb" }
 
 # Meilisearch
 meilisearch-sdk = { group = "com.meilisearch.sdk", name = "meilisearch-java", version.ref = "meilisearch" }

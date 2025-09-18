@@ -16,9 +16,9 @@ import org.simpmusic.lyrics.domain.model.Resource
 import org.simpmusic.lyrics.domain.repository.LyricRepository
 import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
 import org.simpmusic.lyrics.extensions.*
-import org.simpmusic.lyrics.infrastructure.datasource.AppwriteDataSource
 import org.simpmusic.lyrics.infrastructure.datasource.LyricSearchDocument
 import org.simpmusic.lyrics.infrastructure.datasource.MeilisearchDataSource
+import org.simpmusic.lyrics.infrastructure.datasource.MongoDataSource
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -29,56 +29,55 @@ import org.springframework.stereotype.Service
 class LyricService(
     private val lyricRepository: LyricRepository,
     private val translatedLyricRepository: TranslatedLyricRepository,
-    private val appwriteDataSource: AppwriteDataSource,
+    private val mongoDataSource: MongoDataSource,
     private val meilisearchDataSource: MeilisearchDataSource,
 ) {
     private val logger = LoggerFactory.getLogger(LyricService::class.java)
 
     /**
-     * Initialize Appwrite database and collections, then initialize Meilisearch
-     * Uses shareHot to make the flow hot and allow multiple collectors
+     * Check MongoDB connection and initialize Meilisearch
      */
-    fun initializeAppwrite(): Flow<Resource<String>> =
+    fun initializeServices(): Flow<Resource<String>> =
         flow {
             try {
-                logger.info("initializeAppwrite --> Starting Appwrite initialization")
+                logger.info("initializeServices --> Starting services initialization")
 
-                // Initialize Appwrite first
-                val appwriteResult =
-                    appwriteDataSource
-                        .initializeAppwrite()
-                        .logEach("Appwrite initialization")
-                        .logCompletion("Appwrite initialization completed")
+                // Check MongoDB connection first
+                val mongoResult =
+                    mongoDataSource
+                        .checkConnection()
+                        .logEach("MongoDB connection check")
+                        .logCompletion("MongoDB connection check completed")
                         .catchToResourceError()
                         .last()
 
-                when (appwriteResult) {
+                when (mongoResult) {
                     is Resource.Success -> {
-                        logger.info("initializeAppwrite --> Appwrite initialization completed, starting Meilisearch initialization")
+                        logger.info("initializeServices --> MongoDB connection verified, starting Meilisearch initialization")
 
-                        // Initialize Meilisearch after Appwrite success
+                        // Initialize Meilisearch after MongoDB connection verified
                         val meilisearchResult = meilisearchDataSource.initializeMeilisearch().last()
                         when (meilisearchResult) {
                             is Resource.Success -> {
-                                logger.info("initializeAppwrite --> Both Appwrite and Meilisearch initialized successfully")
-                                emit(Resource.Success("Appwrite and Meilisearch initialized successfully"))
+                                logger.info("initializeServices --> Both MongoDB and Meilisearch initialized successfully")
+                                emit(Resource.Success("MongoDB connection verified and Meilisearch initialized successfully"))
                             }
 
                             is Resource.Error -> {
-                                logger.warn("initializeAppwrite --> Meilisearch initialization failed: ${meilisearchResult.message}")
-                                emit(Resource.Success("Appwrite initialized successfully, but Meilisearch initialization failed"))
+                                logger.warn("initializeServices --> Meilisearch initialization failed: ${meilisearchResult.message}")
+                                emit(Resource.Success("MongoDB connection verified, but Meilisearch initialization failed"))
                             }
                         }
                     }
 
                     is Resource.Error -> {
-                        logger.error("initializeAppwrite --> Appwrite initialization failed: ${appwriteResult.message}")
-                        emit(Resource.Error(appwriteResult.message, appwriteResult.exception))
+                        logger.error("initializeServices --> MongoDB connection failed: ${mongoResult.message}")
+                        emit(Resource.Error(mongoResult.message, mongoResult.exception))
                     }
                 }
             } catch (e: Exception) {
-                logger.error("initializeAppwrite --> Error during initialization", e)
-                emit(Resource.Error("Initialization failed: ${e.message}", e))
+                logger.error("initializeServices --> Error during initialization", e)
+                emit(Resource.Error("Services initialization failed: ${e.message}", e))
             }
         }.flowOn(Dispatchers.IO)
 
@@ -128,26 +127,6 @@ class LyricService(
     ): Flow<Resource<List<LyricResponseDTO>>> =
         lyricRepository
             .findBySongTitle(title, limit, offset)
-            .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
-            .catchToResourceError()
-
-    fun getLyricsByArtist(
-        artist: String,
-        limit: Int? = null,
-        offset: Int? = null,
-    ): Flow<Resource<List<LyricResponseDTO>>> =
-        lyricRepository
-            .findByArtist(artist, limit, offset)
-            .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
-            .catchToResourceError()
-
-    fun searchLyrics(
-        keywords: String,
-        limit: Int? = null,
-        offset: Int? = null,
-    ): Flow<Resource<List<LyricResponseDTO>>> =
-        lyricRepository
-            .search(keywords, limit, offset)
             .mapSuccess { lyrics -> lyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
 
@@ -272,16 +251,6 @@ class LyricService(
     ): Flow<Resource<List<TranslatedLyricResponseDTO>>> =
         translatedLyricRepository
             .findByVideoId(videoId, limit, offset)
-            .mapSuccess { translatedLyrics -> translatedLyrics.map { it.toResponseDTO() } }
-            .catchToResourceError()
-
-    fun getTranslatedLyricsByLanguage(
-        language: String,
-        limit: Int? = null,
-        offset: Int? = null,
-    ): Flow<Resource<List<TranslatedLyricResponseDTO>>> =
-        translatedLyricRepository
-            .findByLanguage(language, limit, offset)
             .mapSuccess { translatedLyrics -> translatedLyrics.map { it.toResponseDTO() } }
             .catchToResourceError()
 

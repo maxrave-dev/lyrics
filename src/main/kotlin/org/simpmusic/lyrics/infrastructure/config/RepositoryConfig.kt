@@ -1,13 +1,13 @@
 package org.simpmusic.lyrics.infrastructure.config
 
-import io.appwrite.services.Databases
 import org.simpmusic.lyrics.domain.repository.LyricRepository
 import org.simpmusic.lyrics.domain.repository.TranslatedLyricRepository
-import org.simpmusic.lyrics.infrastructure.persistence.AppwriteLyricRepository
-import org.simpmusic.lyrics.infrastructure.persistence.AppwriteTranslatedLyricRepository
+import org.simpmusic.lyrics.infrastructure.persistence.MongoLyricRepository
+import org.simpmusic.lyrics.infrastructure.persistence.MongoTranslatedLyricRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.data.mongodb.core.MongoTemplate
 
 /**
  * Application configuration for repository components
@@ -16,17 +16,10 @@ import org.springframework.context.annotation.Primary
 class RepositoryConfig {
     @Bean
     @Primary
-    fun lyricRepository(
-        databases: Databases,
-        databaseId: String,
-        lyricsCollectionId: String,
-    ): LyricRepository = AppwriteLyricRepository(databases, databaseId, lyricsCollectionId)
+    fun lyricRepository(mongoTemplate: MongoTemplate): LyricRepository = MongoLyricRepository(mongoTemplate)
 
     @Bean
     @Primary
-    fun translatedLyricRepository(
-        databases: Databases,
-        databaseId: String,
-        translatedLyricsCollectionId: String,
-    ): TranslatedLyricRepository = AppwriteTranslatedLyricRepository(databases, databaseId, translatedLyricsCollectionId)
+    fun translatedLyricRepository(mongoTemplate: MongoTemplate): TranslatedLyricRepository =
+        MongoTranslatedLyricRepository(mongoTemplate)
 }

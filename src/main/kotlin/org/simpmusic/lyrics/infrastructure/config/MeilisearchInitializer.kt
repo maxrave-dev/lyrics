@@ -1,13 +1,9 @@
 package org.simpmusic.lyrics.infrastructure.config
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
-import org.simpmusic.lyrics.infrastructure.datasource.MeilisearchDataSource
+import kotlinx.coroutines.flow.*
 import org.simpmusic.lyrics.domain.model.Resource
+import org.simpmusic.lyrics.infrastructure.datasource.MeilisearchDataSource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.CommandLineRunner
@@ -22,7 +18,7 @@ import org.springframework.core.env.Environment
 class MeilisearchInitializer(
     private val meilisearchDataSource: MeilisearchDataSource,
     private val environment: Environment,
-    @Qualifier("applicationScope") private val applicationScope: CoroutineScope,
+    @param:Qualifier("applicationScope") private val applicationScope: CoroutineScope,
 ) {
     private val logger = LoggerFactory.getLogger(MeilisearchInitializer::class.java)
 
@@ -48,10 +44,11 @@ class MeilisearchInitializer(
                                 }
 
                                 is Resource.Error -> {
-                                    logger.error("Failed to initialize Meilisearch: ${result.message}", result.exception)
+                                    logger.error(
+                                        "Failed to initialize Meilisearch: ${result.message}",
+                                        result.exception,
+                                    )
                                 }
-
-
                             }
                         }.onCompletion { error ->
                             if (error != null) {
