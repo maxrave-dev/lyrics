@@ -1,7 +1,7 @@
 # SimpMusic Lyrics
 
 A robust and scalable RESTful API service for managing song lyrics, translations records. Built with
-Kotlin, Spring Boot, Appwrite database and Meilisearch for searching, featuring advanced duplicate detection and clean
+Kotlin, Spring Boot, MongoDB database and Meilisearch for searching, featuring advanced duplicate detection and clean
 architecture patterns.
 
 SimpMusic Lyrics is focusing on YouTube Music, providing data from `videoId` of the track. The database is populated by
@@ -19,7 +19,7 @@ https://api-lyrics.simpmusic.org/v1
 
 - [https://lyrics.simpmusic.org/](https://lyrics.simpmusic.org/)
 
-[![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/) [![Spring Boot](https://img.shields.io/badge/spring%20boot-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot) [![Appwrite](https://img.shields.io/badge/appwrite-%23FD366E.svg?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io/)
+[![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/) [![Spring Boot](https://img.shields.io/badge/spring%20boot-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)](https://spring.io/projects/spring-boot)
 
 ## Features
 
@@ -52,16 +52,9 @@ cd lyrics-api
 - Note your Meilisearch URL and Master Key
 - Using Meilisearch for super fast search capabilities
 
-### 4. Set Up Appwrite
+### 4. Set up MongoDB connection
 
-1. Create an [Appwrite](https://appwrite.io/) account
-2. Create a new project
-3. Note down your:
-    - Project ID
-    - API Endpoint
-    - API Key
-    - ADMIN_IPS: List of IPs allowed to perform admin actions without Rate Limiting
-    - HMAC_SECRET: A secret key for HMAC authentication (should be kept secret)
+- Note your MongoDB connection string and database name
 
 ### 5. Configure Environment
 
@@ -122,8 +115,6 @@ GET    /v1/{videoId}           # Get lyrics by video ID
 GET    /v1/{videoId}?limit=10&offset=0 # Get paginated lyrics by video ID
 GET    /v1/search/title?title= # Search by song title
 GET    /v1/search/title?title=&limit=10&offset=0 # Paginated search by song title
-GET    /v1/search/artist?artist= # Search by artist
-GET    /v1/search/artist?artist=&limit=10&offset=0 # Paginated search by artist
 GET    /v1/search?q=           # Full-text search
 GET    /v1/search?q=&limit=10&offset=0 # Paginated full-text search
 POST   /v1                     # Create new lyrics
@@ -194,7 +185,7 @@ provides a quick way to determine the response type.
 
 The API is protected with rate limiting to prevent abuse:
 
-- 30 requests per minute per IP address
+- 15 requests per minute per IP address
 - Applies to all API endpoints
 - When limit is exceeded, returns HTTP 429 (Too Many Requests)
 

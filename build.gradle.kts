@@ -40,8 +40,9 @@ dependencies {
     // Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    // AppWrite
-    implementation(libs.appwrite.sdk)
+    // MongoDB
+    implementation(libs.spring.boot.starter.data.mongodb)
+
 
     // Meilisearch
     implementation(libs.meilisearch.sdk)
